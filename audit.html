@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Apex Audit | MRD Clinical Suite</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background: radial-gradient(ellipse at 20% 30%, #f0f5fe 0%, #e2ecf9 100%);
+            padding: 2rem 1.8rem;
+            min-height: 100vh;
+            position: relative;
+        }
+
+        /* animated background grain */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='1' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* premium glass container */
+        .luxe-container {
+            max-width: 100%;
+            background: rgba(255, 255, 255, 0.96);
+            backdrop-filter: blur(2px);
+            border-radius: 2rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.5) inset, 0 0 0 1px rgba(0, 0, 0, 0.05);
+            padding: 1.8rem 1.8rem 2rem 1.8rem;
+            transition: all 0.3s;
+            position: relative;
+            z-index: 2;
+        }
+
+        /* header with jewel accent */
+        .hero-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            flex-wrap: wrap;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid;
+            border-image: linear-gradient(90deg, #3b82f6, #a855f7, #3b82f6) 1;
+            border-bottom-style: solid;
+            border-bottom-width: 2px;
+        }
+        .title-block h1 {
+            font-size: 1.9rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #1e3a8a, #3b82f6, #7c3aed);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+            letter-spacing: -0.02em;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .title-block h1 span {
+            background: linear-gradient(145deg, #2563eb, #4f46e5);
+            font-size: 0.7rem;
+            padding: 0.2rem 0.9rem;
+            border-radius: 40px;
+            color: white;
+            background-clip: unset;
+            -webkit-background-clip: unset;
+            font-weight: 600;
+            letter-spacing: 0;
+        }
+        .pill-badge {
+            background: rgba(59,130,246,0.12);
+            backdrop-filter: blur(4px);
+            padding: 0.4rem 1.2rem;
+            border-radius: 60px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #1e40af;
+            border: 1px solid rgba(59,130,246,0.3);
+        }
+
+        /* elevated control panel */
+        .control-panel {
+            display: flex;
+            gap: 1.2rem;
+            flex-wrap: wrap;
+            margin-bottom: 2rem;
+            background: rgba(255,255,240,0.5);
+            padding: 1rem 1.6rem;
+            border-radius: 2rem;
+            align-items: center;
+            justify-content: space-between;
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(59,130,246,0.2);
+        }
+        .date-group {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        .date-group input {
+            background: white;
+            border: 1px solid #e2e8f0;
+            padding: 0.7rem 1.2rem;
+            border-radius: 2rem;
+            font-size: 0.85rem;
+            font-weight: 500;
+            font-family: 'Inter', monospace;
+            transition: all 0.2s;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+        }
+        .date-group input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59,130,246,0.2);
+        }
+        .btn-group {
+            display: flex;
+            gap: 1rem;
+        }
+        .btn {
+            font-weight: 700;
+            padding: 0.7rem 1.6rem;
+            border-radius: 2.5rem;
+            border: none;
+            cursor: pointer;
+            font-size: 0.85rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.25s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+            background: white;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+        }
+        .btn-primary {
+            background: linear-gradient(105deg, #2563eb, #4f46e5);
+            color: white;
+            border: none;
+            box-shadow: 0 4px 12px rgba(37,99,235,0.25);
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 20px -12px rgba(37,99,235,0.45);
+            background: linear-gradient(105deg, #3b82f6, #6366f1);
+        }
+        .btn-success {
+            background: linear-gradient(105deg, #059669, #10b981);
+            color: white;
+            box-shadow: 0 4px 12px rgba(5,150,105,0.25);
+        }
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 20px -12px rgba(5,150,105,0.45);
+        }
+
+        /* table wrapper - premium scroll */
+        .table-vault {
+            overflow-x: auto;
+            border-radius: 1.5rem;
+            margin: 1rem 0 1rem 0;
+            background: #ffffff;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+            border: 1px solid #eef2ff;
+        }
+        table {
+            border-collapse: separate;
+            border-spacing: 0;
+            width: 100%;
+            min-width: 3600px;
+            font-size: 0.72rem;
+            font-weight: 500;
+            background: #ffffff;
+        }
+        th {
+            background: linear-gradient(110deg, #0f2b3d 0%, #1a3f57 100%);
+            color: #f1f9ff;
+            padding: 14px 6px;
+            font-weight: 700;
+            font-size: 0.7rem;
+            letter-spacing: 0.03em;
+            text-transform: uppercase;
+            border-bottom: 2px solid #2d6a8f;
+            border-right: 1px solid #2a5e7e;
+        }
+        td {
+            border: 1px solid #eef2fa;
+            padding: 10px 5px;
+            text-align: center;
+            transition: all 0.12s;
+        }
+        .sub-header th {
+            background: linear-gradient(110deg, #22668d, #2c7aa3);
+            font-weight: 600;
+            font-size: 0.65rem;
+            text-transform: none;
+            letter-spacing: 0.2px;
+        }
+        /* row highlight - elegant aurora */
+        .active-row td {
+            background: linear-gradient(110deg, #fff9e8, #fff5e0) !important;
+            box-shadow: inset 0 0 0 1px #fbbf24;
+            position: relative;
+        }
+        .inactive-row td {
+            background: #ffffff;
+        }
+        .no {
+            background: #ffefed !important;
+            border-left: 3px solid #ef4444;
+            font-weight: 600;
+        }
+        /* modern select design */
+        select {
+            width: 100%;
+            padding: 6px 4px;
+            border-radius: 40px;
+            border: 1px solid #e0e7ff;
+            background: #fefefe;
+            font-weight: 500;
+            font-size: 0.68rem;
+            font-family: 'Inter', monospace;
+            cursor: pointer;
+            transition: all 0.15s;
+            text-align: center;
+        }
+        select:hover {
+            border-color: #3b82f6;
+            background: #fafcff;
+        }
+        input[type="text"] {
+            font-family: 'Inter', monospace;
+            width: 100%;
+            padding: 6px 6px;
+            border-radius: 40px;
+            border: 1px solid #e2e8f0;
+            background: white;
+            font-size: 0.7rem;
+            font-weight: 500;
+            text-align: center;
+            transition: 0.15s;
+        }
+        input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59,130,246,0.15);
+        }
+        .score-gem {
+            background: linear-gradient(145deg, #eef2ff, #e6edfc);
+            font-weight: 800;
+            font-size: 0.8rem;
+            color: #1e3a8a;
+            font-family: 'Inter', monospace;
+            text-shadow: 0 1px 0 white;
+        }
+        tfoot td {
+            background: linear-gradient(95deg, #f1f6fe, #eef3fc);
+            font-weight: 800;
+            color: #155e7e;
+            border-top: 2px solid #cbdff2;
+            padding: 10px 5px;
+            font-size: 0.7rem;
+        }
+        /* summary card - premium glass */
+        .score-summary {
+            margin-top: 1.8rem;
+            background: linear-gradient(115deg, #ffffff, #fafdff);
+            border-radius: 2rem;
+            padding: 1rem 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 1rem;
+            border: 1px solid rgba(59,130,246,0.3);
+            backdrop-filter: blur(8px);
+            box-shadow: 0 8px 20px -8px rgba(0, 0, 0, 0.08);
+        }
+        .total-ring {
+            background: linear-gradient(135deg, #1e293b, #0f172a);
+            padding: 0.5rem 1.6rem;
+            border-radius: 3rem;
+            color: white;
+            font-weight: 800;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+        .total-ring span {
+            background: #facc15;
+            color: #0f172a;
+            padding: 0.2rem 0.9rem;
+            border-radius: 3rem;
+            font-size: 1.2rem;
+            margin-left: 6px;
+        }
+        .delete-icon {
+            background: transparent;
+            border: none;
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 5px 8px;
+            border-radius: 50px;
+            transition: all 0.2s;
+            font-weight: 600;
+            color: #ef4444;
+        }
+        .delete-icon:hover {
+            background: #fee2e2;
+            transform: scale(1.08);
+        }
+        .legend-note {
+            font-size: 0.7rem;
+            color: #5b6e8c;
+            margin-top: 1rem;
+            text-align: right;
+            display: flex;
+            justify-content: flex-end;
+            gap: 1.2rem;
+        }
+        @keyframes fadeSlide {
+            0% { opacity: 0; transform: translateY(8px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+        .row-animate {
+            animation: fadeSlide 0.2s ease-out;
+        }
+    </style>
+</head>
+<body>
+
+<div class="luxe-container">
+    <div class="hero-section">
+        <div class="title-block">
+            <h1>
+                ✦ Apex Clinical Audit
+                <span>MRD v3</span>
+            </h1>
+            <div style="font-size: 0.7rem; color: #4b6b8f; margin-top: 6px;">precision · compliance · intelligence</div>
+        </div>
+        <div class="pill-badge">
+            🧬 Joint Commission Ready
+        </div>
+    </div>
+
+    <div class="control-panel">
+        <div class="date-group">
+            <input type="datetime-local" id="auditDateTime" title="Audit Timestamp">
+            <input type="month" id="auditMonth" title="Review Month">
+        </div>
+        <div class="btn-group">
+            <button class="btn btn-primary" id="addNewRecordBtn">✦ New Record</button>
+            <button class="btn btn-success" id="submitToSheetsBtn">📤 Submit Audit</button>
+        </div>
+    </div>
+
+    <div class="table-vault">
+        <table id="masterAuditTable">
+            <thead>
+                <tr>
+                    <th rowspan="2">#ID</th>
+                    <th rowspan="2">⌫</th>
+                    <th rowspan="2">🏥 IPD Number</th>
+                    <th rowspan="2">🩺 Provisional Dx</th>
+                    <th rowspan="2">💊 Treatment</th>
+                    <th rowspan="2">📋 Plan of Care</th>
+                    <th rowspan="2">👨‍⚕️ Consultant Visit</th>
+                    <th rowspan="2">🔄 Reassessment</th>
+                    <th colspan="2">🧑‍⚕️ Nursing</th>
+                    <th rowspan="2">🔪 Procedure</th>
+                    <th rowspan="2">📈 Monitoring During</th>
+                    <th rowspan="2">📉 Monitoring After</th>
+                    <th rowspan="2">✅ Safety Checklist</th>
+                    <th rowspan="2">💉 Pre-Anesthesia</th>
+                    <th rowspan="2">🏥 Pre-Op</th>
+                    <th rowspan="2">⚙️ Operative</th>
+                    <th rowspan="2">🩹 Post-Op</th>
+                    <th rowspan="2">😴 Anesthesia</th>
+                    <th rowspan="2">📝 Doctor Note</th>
+                    <th rowspan="2">⚠️ Safety</th>
+                    <th rowspan="2">🩸 BT</th>
+                    <th rowspan="2">🥗 Diet</th>
+                    <th rowspan="2">📊 Treatment Chart</th>
+                    <th rowspan="2">↪️ Referral</th>
+                    <th rowspan="2">🚑 Transfer</th>
+                    <th colspan="2">🏁 Discharge</th>
+                    <th colspan="5">⚰️ Death Documentation</th>
+                    <th rowspan="2">🏆 Score</th>
+                </tr>
+                <tr class="sub-header">
+                    <th>+ve</th><th>Sign</th>
+                    <th>Yes/No</th><th>Yes/No</th>
+                    <th>Physician</th><th>Info</th><th>Summary</th><th>Cause</th><th>Form 4</th>
+                </tr>
+            </thead>
+            <tbody id="auditTableBody"></tbody>
+            <tfoot>
+                <tr id="columnScoreFooter">
+                    <td colspan="3">📊 Column Score Summary</td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+
+    <div class="score-summary">
+        <div style="display: flex; align-items: center; gap: 12px;">
+            <span style="font-weight: 800; background: #eef3ff; padding: 5px 15px; border-radius: 40px;">📈 TOTAL COMPLIANCE</span>
+        </div>
+        <div class="total-ring">
+            SCORE <span id="globalScoreDisplay">0/0</span>
+        </div>
+    </div>
+    <div class="legend-note">
+        <span>✅ Yes = compliant</span>
+        <span>❌ No = alert highlight</span>
+        <span>⚪ N/A = excluded from scoring</span>
+        <span>✨ Click IPD to activate row</span>
+    </div>
+</div>
+
+<script>
+    // === CONFIGURATION ===
+    const TOTAL_SELECT_COLUMNS = 30;   // from Provisional Dx to Death Form4
+    const WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbxgWj_Wxk_zKuYdbod3CA8qTs4hZN2FW7Bp93xXTVFgXiAiP9FUL-gGxwgHAJqTA6DI/exec";
+
+    // Helper: create beautiful select
+    function createElegantSelect() {
+        const sel = document.createElement("select");
+        sel.innerHTML = `<option value="Yes">✅ Yes</option><option value="No">❌ No</option><option value="NA">⚪ N/A</option>`;
+        sel.addEventListener("change", function() {
+            const row = this.closest("tr");
+            if (row) updateSingleRowScore(row);
+            refreshAllAggregates();
+        });
+        return sel;
+    }
+
+    // update single row score (yes/total)
+    function updateSingleRowScore(row) {
+        const selects = row.querySelectorAll("select");
+        let yes = 0, valid = 0;
+        selects.forEach(sel => {
+            sel.classList.remove("no");
+            const val = sel.value;
+            if (val !== "NA") {
+                valid++;
+                if (val === "Yes") yes++;
+                if (val === "No") sel.classList.add("no");
+            }
+        });
+        const scoreCell = row.querySelector(".score-gem");
+        if (scoreCell) scoreCell.innerText = `${yes}/${valid}`;
+    }
+
+    // global refresh: total + column-wise footer
+    function refreshAllAggregates() {
+        const rows = document.querySelectorAll("#auditTableBody tr");
+        let globalYes = 0, globalTotal = 0;
+        
+        // first ensure each row score is fresh
+        rows.forEach(row => {
+            const selects = row.querySelectorAll("select");
+            let rowYes = 0, rowValid = 0;
+            selects.forEach(sel => {
+                const val = sel.value;
+                if (val !== "NA") {
+                    rowValid++;
+                    if (val === "Yes") rowYes++;
+                }
+            });
+            const scoreSpan = row.querySelector(".score-gem");
+            if (scoreSpan) scoreSpan.innerText = `${rowYes}/${rowValid}`;
+            globalYes += rowYes;
+            globalTotal += rowValid;
+        });
+        document.getElementById("globalScoreDisplay").innerText = `${globalYes}/${globalTotal}`;
+        
+        // update column footer (30 columns)
+        const footerRow = document.getElementById("columnScoreFooter");
+        if (!footerRow) return;
+        while (footerRow.cells.length > 1) footerRow.deleteCell(1);
+        
+        for (let colIdx = 0; colIdx < TOTAL_SELECT_COLUMNS; colIdx++) {
+            let colYes = 0, colValid = 0;
+            rows.forEach(row => {
+                // row structure: cells[0]=SN, [1]=action, [2]=IPD, then 30 selects, then score cell
+                const selectCell = row.cells[colIdx + 3];
+                if (selectCell) {
+                    const sel = selectCell.querySelector("select");
+                    if (sel) {
+                        const val = sel.value;
+                        if (val !== "NA") {
+                            colValid++;
+                            if (val === "Yes") colYes++;
+                        }
+                    }
+                }
+            });
+            const td = document.createElement("td");
+            td.innerText = `${colYes}/${colValid}`;
+            td.style.fontWeight = "800";
+            td.style.backgroundColor = "#eef2ff";
+            td.style.fontSize = "0.7rem";
+            footerRow.appendChild(td);
+        }
+        // extra placeholder for score column alignment
+        const spacer = document.createElement("td");
+        spacer.innerText = "∑";
+        spacer.style.background = "#e4ecf9";
+        footerRow.appendChild(spacer);
+    }
+    
+    // create full new row
+    function buildNewRow(serial) {
+        const tr = document.createElement("tr");
+        tr.className = "inactive-row";
+        
+        // 1) Serial number
+        const tdSn = document.createElement("td");
+        tdSn.innerText = serial;
+        tdSn.style.fontWeight = "800";
+        tr.appendChild(tdSn);
+        
+        // 2) Action (delete)
+        const tdAction = document.createElement("td");
+        const delBtn = document.createElement("button");
+        delBtn.innerHTML = "🗑️";
+        delBtn.className = "delete-icon";
+        delBtn.onclick = function(e) { deleteRecord(this); };
+        tdAction.appendChild(delBtn);
+        tr.appendChild(tdAction);
+        
+        // 3) IPD input
+        const tdIpd = document.createElement("td");
+        const ipdInput = document.createElement("input");
+        ipdInput.type = "text";
+        ipdInput.placeholder = "e.g., IPD-2456";
+        ipdInput.style.width = "95px";
+        ipdInput.addEventListener("focus", () => highlightRow(tr));
+        ipdInput.addEventListener("input", () => highlightRow(tr));
+        tdIpd.appendChild(ipdInput);
+        tr.appendChild(tdIpd);
+        
+        // 4) 30 select fields
+        for (let i = 0; i < TOTAL_SELECT_COLUMNS; i++) {
+            const tdSel = document.createElement("td");
+            tdSel.appendChild(createElegantSelect());
+            tr.appendChild(tdSel);
+        }
+        
+        // 5) Score cell
+        const tdScore = document.createElement("td");
+        tdScore.className = "score-gem";
+        tdScore.innerText = "0/0";
+        tr.appendChild(tdScore);
+        
+        return tr;
+    }
+    
+    function highlightRow(row) {
+        document.querySelectorAll("#auditTableBody tr").forEach(r => {
+            r.classList.remove("active-row");
+            r.classList.add("inactive-row");
+        });
+        row.classList.remove("inactive-row");
+        row.classList.add("active-row");
+    }
+    
+    function deleteRecord(btnElement) {
+        const row = btnElement.closest("tr");
+        if (row && confirm("⚠️ Remove this patient record from audit?")) {
+            row.remove();
+            renumberRows();
+            refreshAllAggregates();
+        }
+    }
+    
+    function renumberRows() {
+        const rows = document.querySelectorAll("#auditTableBody tr");
+        rows.forEach((row, idx) => {
+            row.cells[0].innerText = idx + 1;
+        });
+    }
+    
+    function addRecord() {
+        const tbody = document.getElementById("auditTableBody");
+        const newSn = tbody.rows.length + 1;
+        const freshRow = buildNewRow(newSn);
+        tbody.appendChild(freshRow);
+        renumberRows();
+        refreshAllAggregates();
+        freshRow.classList.add("row-animate");
+        setTimeout(() => freshRow.classList.remove("row-animate"), 300);
+        freshRow.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+    
+    // date formatter: elegant dd-mm-yyyy hh:mm AM/PM
+    function formatAuditDateTime(raw) {
+        if (!raw) return "";
+        const dateObj = new Date(raw);
+        if (isNaN(dateObj.getTime())) return raw;
+        const day = String(dateObj.getDate()).padStart(2,'0');
+        const month = String(dateObj.getMonth()+1).padStart(2,'0');
+        const year = dateObj.getFullYear();
+        let hrs24 = dateObj.getHours();
+        const mins = String(dateObj.getMinutes()).padStart(2,'0');
+        const ampm = hrs24 >= 12 ? 'PM' : 'AM';
+        const hrs12 = hrs24 % 12 || 12;
+        return `${day}-${month}-${year} ${hrs12}:${mins} ${ampm}`;
+    }
+    
+    // submit payload
+    function submitAuditData() {
+        const dateTimeRaw = document.getElementById("auditDateTime").value;
+        const formattedDateTime = formatAuditDateTime(dateTimeRaw);
+        const monthVal = document.getElementById("auditMonth").value;
+        const rows = document.querySelectorAll("#auditTableBody tr");
+        const payload = [];
+        
+        for (let row of rows) {
+            const ipdInputField = row.cells[2]?.querySelector("input");
+            const ipdValue = ipdInputField ? ipdInputField.value.trim() : "";
+            if (ipdValue === "") continue;
+            
+            const record = [];
+            record.push(formattedDateTime);
+            record.push(monthVal);
+            record.push(ipdValue);
+            
+            // get all select values (30 columns)
+            for (let i = 0; i < TOTAL_SELECT_COLUMNS; i++) {
+                const selectCell = row.cells[i + 3];
+                const selectEl = selectCell ? selectCell.querySelector("select") : null;
+                record.push(selectEl ? selectEl.value : "NA");
+            }
+            const scoreText = row.querySelector(".score-gem")?.innerText || "0/0";
+            record.push(scoreText);
+            payload.push(record);
+        }
+        
+        if (payload.length === 0) {
+            alert("❌ No valid records with IPD number. Please fill IPD field before submit.");
+            return;
+        }
+        
+        fetch(WEBHOOK_URL, {
+            method: "POST",
+            mode: "no-cors",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        })
+        .then(() => {
+            alert(`✅ Audit submitted! ${payload.length} record(s) synced.\nTimestamp: ${formattedDateTime}`);
+        })
+        .catch(err => {
+            console.warn(err);
+            alert("⚠️ Request sent, but CORS policy may hide response. Data is likely recorded.");
+        });
+    }
+    
+    // demo initial row with sample data
+    function seedInitialRow() {
+        const tbody = document.getElementById("auditTableBody");
+        const demoRow = buildNewRow(1);
+        const ipdField = demoRow.cells[2].querySelector("input");
+        if (ipdField) ipdField.value = "IPD-24087";
+        const allSelects = demoRow.querySelectorAll("select");
+        if (allSelects.length) {
+            allSelects[0].value = "Yes";
+            allSelects[1].value = "Yes";
+            allSelects[2].value = "Yes";
+            allSelects[3].value = "Yes";
+            allSelects[5].value = "Yes";
+            allSelects[7].value = "Yes";
+            allSelects[9].value = "Yes";
+            allSelects[12].value = "Yes";
+        }
+        tbody.appendChild(demoRow);
+        updateSingleRowScore(demoRow);
+    }
+    
+    // initialization
+    window.onload = () => {
+        const now = new Date();
+        const localIso = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0,16);
+        document.getElementById("auditDateTime").value = localIso;
+        const currentYearMonth = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+        document.getElementById("auditMonth").value = currentYearMonth;
+        
+        seedInitialRow();
+        refreshAllAggregates();
+        
+        document.getElementById("addNewRecordBtn").addEventListener("click", addRecord);
+        document.getElementById("submitToSheetsBtn").addEventListener("click", submitAuditData);
+    };
+    
+    window.refreshAllAggregates = refreshAllAggregates;
+    window.updateSingleRowScore = updateSingleRowScore;
+</script>
+</body>
+</html>

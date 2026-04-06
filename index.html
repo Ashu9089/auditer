@@ -1,0 +1,1026 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>Apex Intelligence | Audit Command Center</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
+
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{
+      font-family:'Inter',system-ui,-apple-system,sans-serif;
+      background:linear-gradient(145deg,#0a0f1e 0%,#0f172f 100%);
+      padding:2rem 1.8rem;
+      min-height:100vh;
+      position:relative;
+    }
+    body::before{
+      content:'';
+      position:fixed;
+      inset:0;
+      background:radial-gradient(circle at 20% 30%,rgba(56,189,248,.08),rgba(139,92,246,.05));
+      pointer-events:none;
+      z-index:0;
+    }
+
+    .apex-dashboard{
+      display:flex;
+      flex-wrap:wrap;
+      gap:1.8rem;
+      margin-bottom:2rem;
+      position:relative;
+      z-index:2;
+    }
+
+    .kpi-panel{
+      flex:2;
+      min-width:280px;
+      background:rgba(15,23,42,.75);
+      backdrop-filter:blur(16px);
+      border-radius:2rem;
+      padding:1.4rem 1.8rem;
+      box-shadow:0 25px 45px -12px rgba(0,0,0,.5),0 0 0 1px rgba(255,255,255,.08) inset;
+      border:1px solid rgba(56,189,248,.2);
+    }
+
+    .control-panel{
+      flex:3;
+      background:rgba(15,23,42,.7);
+      backdrop-filter:blur(16px);
+      border-radius:2rem;
+      padding:1.4rem 1.8rem;
+      box-shadow:0 25px 45px -12px rgba(0,0,0,.4);
+      border:1px solid rgba(56,189,248,.25);
+    }
+
+    .stat-grid{
+      display:flex;
+      flex-wrap:wrap;
+      gap:1rem;
+      margin:1rem 0 1.2rem 0;
+    }
+
+    .stat-card{
+      background:linear-gradient(135deg,rgba(30,41,59,.9),rgba(15,23,42,.8));
+      border-radius:1.5rem;
+      padding:1rem 1.2rem;
+      flex:1;
+      min-width:130px;
+      box-shadow:0 8px 20px rgba(0,0,0,.2);
+      border:1px solid rgba(56,189,248,.3);
+      transition:all .25s ease;
+    }
+
+    .stat-card:hover{
+      transform:translateY(-3px);
+      border-color:#38bdf8;
+      box-shadow:0 15px 30px -10px #0ea5e930;
+    }
+
+    .stat-number{
+      font-size:2rem;
+      font-weight:800;
+      background:linear-gradient(135deg,#94a3f8,#38bdf8);
+      background-clip:text;
+      -webkit-background-clip:text;
+      color:transparent;
+      letter-spacing:-.02em;
+    }
+
+    .date-range-box{
+      display:flex;
+      gap:1rem;
+      flex-wrap:wrap;
+      align-items:center;
+      margin-bottom:1.5rem;
+    }
+
+    .date-range-box input{
+      padding:.7rem 1rem;
+      border-radius:2rem;
+      border:1px solid #334155;
+      background:#0f172a;
+      color:#e2e8f0;
+      font-family:'Inter';
+      font-weight:500;
+      transition:all .2s;
+    }
+
+    .date-range-box input:focus{
+      outline:none;
+      border-color:#38bdf8;
+      box-shadow:0 0 0 3px rgba(56,189,248,.2);
+    }
+
+    .btn{
+      font-weight:700;
+      padding:.65rem 1.5rem;
+      border-radius:2rem;
+      border:none;
+      cursor:pointer;
+      font-size:.8rem;
+      transition:all .2s cubic-bezier(.2,.9,.4,1.1);
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+    }
+
+    .btn-primary{
+      background:linear-gradient(105deg,#0ea5e9,#6366f1);
+      color:#fff;
+      box-shadow:0 4px 12px rgba(14,165,233,.3);
+    }
+    .btn-primary:hover{transform:translateY(-2px);box-shadow:0 12px 20px -10px #0ea5e9}
+
+    .btn-outline{
+      background:rgba(255,255,255,.05);
+      border:1px solid #38bdf8;
+      color:#bae6fd;
+      backdrop-filter:blur(4px);
+    }
+    .btn-outline:hover{
+      background:#0ea5e920;
+      transform:translateY(-2px);
+      color:#fff;
+      border-color:#7dd3fc;
+    }
+
+    .btn-yellow{
+      background:linear-gradient(135deg,#fde047,#f59e0b);
+      color:#111827;
+      box-shadow:0 0 0 rgba(253,224,71,.5);
+      animation:pulseGlow 1.8s infinite;
+      font-weight:800;
+    }
+    .btn-yellow:hover{
+      transform:translateY(-2px) scale(1.02);
+      box-shadow:0 15px 30px -10px rgba(245,158,11,.6);
+    }
+
+    @keyframes pulseGlow{
+      0%{box-shadow:0 0 0 0 rgba(253,224,71,.45)}
+      70%{box-shadow:0 0 0 16px rgba(253,224,71,0)}
+      100%{box-shadow:0 0 0 0 rgba(253,224,71,0)}
+    }
+
+    .table-wrapper{
+      overflow-x:auto;
+      border-radius:1.5rem;
+      background:rgba(15,23,42,.6);
+      backdrop-filter:blur(12px);
+      box-shadow:0 15px 35px -12px rgba(0,0,0,.4);
+      margin-top:1rem;
+      border:1px solid rgba(56,189,248,.2);
+      position:relative;
+      z-index:2;
+    }
+
+    table{
+      width:100%;
+      border-collapse:collapse;
+      font-size:.7rem;
+      color:#e2e8f0;
+    }
+
+    th{
+      background:linear-gradient(110deg,#0f2b3d,#0a1a2f);
+      color:#f1f9ff;
+      padding:12px 6px;
+      font-weight:700;
+      font-size:.7rem;
+      text-transform:uppercase;
+      letter-spacing:.5px;
+      border-bottom:1px solid #2d6a8f;
+    }
+
+    td{
+      border:1px solid #2d3a5e;
+      padding:8px 4px;
+      text-align:center;
+      background:rgba(30,41,59,.5);
+    }
+
+    .badge-yes{
+      background:linear-gradient(135deg,#05966920,#10b98130);
+      color:#6ee7b7;
+      border-radius:30px;
+      padding:4px 10px;
+      font-weight:700;
+      display:inline-block;
+      border:1px solid #10b98160;
+      font-size:.7rem;
+    }
+
+    .badge-no{
+      background:linear-gradient(135deg,#dc262620,#ef444430);
+      color:#fca5a5;
+      border-radius:30px;
+      padding:4px 10px;
+      font-weight:700;
+      border:1px solid #ef444460;
+    }
+
+    .dashboard-title{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      margin-bottom:1rem;
+      flex-wrap:wrap;
+      gap:12px;
+    }
+
+    .glow-text{
+      background:linear-gradient(135deg,#c084fc,#38bdf8);
+      background-clip:text;
+      -webkit-background-clip:text;
+      color:transparent;
+      font-weight:800;
+    }
+
+    .loading,.error-msg{
+      margin-top:12px;
+      color:#cbd5e1;
+      font-size:.8rem;
+    }
+    .error-msg{color:#fca5a5}
+
+    .footer-note{
+      margin-top:1.2rem;
+      text-align:right;
+      color:#64748b;
+      font-size:.7rem;
+      position:relative;
+      z-index:2;
+    }
+
+    .modal{
+      position:fixed;
+      top:0;
+      left:0;
+      width:100%;
+      height:100%;
+      background:rgba(0,0,0,.72);
+      backdrop-filter:blur(10px);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      z-index:9999;
+      visibility:hidden;
+      opacity:0;
+      transition:.2s;
+    }
+
+    .modal.show{
+      visibility:visible;
+      opacity:1;
+    }
+
+    .modal-card{
+      background:linear-gradient(145deg,#1e293b,#0f172a);
+      border-radius:2rem;
+      padding:2rem;
+      width:360px;
+      max-width:92vw;
+      text-align:center;
+      box-shadow:0 30px 40px rgba(0,0,0,.5);
+      border:1px solid #38bdf880;
+    }
+
+    .modal-card h3{
+      color:#e2e8f0;
+      margin-bottom:1rem;
+      font-size:1.2rem;
+    }
+
+    .modal-card input{
+      width:100%;
+      padding:12px;
+      margin:18px 0;
+      border-radius:40px;
+      border:1px solid #334155;
+      background:#0f172a;
+      color:#fff;
+      font-weight:500;
+      outline:none;
+    }
+
+    .flex-btns{
+      display:flex;
+      gap:12px;
+      justify-content:center;
+      flex-wrap:wrap;
+    }
+
+    @media (max-width:700px){
+      body{padding:1rem}
+    }
+
+    ::-webkit-scrollbar{height:6px;width:6px}
+    ::-webkit-scrollbar-track{background:#0f172a;border-radius:10px}
+    ::-webkit-scrollbar-thumb{background:#38bdf8;border-radius:10px}
+
+    @media print{
+      body{background:#fff;padding:0}
+      body::before,.control-panel,.footer-note,.modal{display:none !important}
+      .kpi-panel{
+        background:#fff;
+        border:1px solid #ddd;
+        box-shadow:none;
+        color:#000;
+      }
+      .table-wrapper{
+        background:#fff;
+        box-shadow:none;
+        border:1px solid #ddd;
+      }
+      th{background:#e5e7eb !important;color:#000 !important}
+      td{
+        background:#fff !important;
+        color:#000 !important;
+        border-color:#ddd !important;
+      }
+      .badge-yes,.badge-no{
+        border:1px solid #999;
+        color:#000;
+        background:#fff;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="apex-dashboard">
+  <div class="kpi-panel">
+    <div style="font-weight:800;font-size:1.4rem;display:flex;align-items:center;gap:8px;">
+      <span class="glow-text">✦ Apex Sentinel</span>
+      <span style="font-size:.7rem;">v3.0</span>
+    </div>
+
+    <div class="stat-grid">
+      <div class="stat-card"><div style="font-size:.7rem;color:#94a3b8;">📋 Total IPD Files</div><div class="stat-number" id="totalIpdCount">0</div></div>
+      <div class="stat-card"><div style="font-size:.7rem;color:#94a3b8;">✅ Audited Files</div><div class="stat-number" id="auditedCount">0</div></div>
+      <div class="stat-card"><div style="font-size:.7rem;color:#94a3b8;">📌 Parameters Audited</div><div class="stat-number" id="totalParams">0</div></div>
+      <div class="stat-card"><div style="font-size:.7rem;color:#94a3b8;">⚠️ Incomplete Params</div><div class="stat-number" id="incompleteParams">0</div></div>
+    </div>
+
+    <div class="stat-card" style="background:linear-gradient(115deg,#0f172a,#1e293b);border-left:4px solid #38bdf8;">
+      <div style="font-weight:600;">📈 OVERALL COMPLIANCE</div>
+      <div class="stat-number" id="compliancePercent">0%</div>
+      <div id="complianceDetail" style="font-size:.7rem;color:#94a3b8;">0/0 parameters</div>
+    </div>
+
+    <div class="loading" id="loadingState">Google Sheet se data load ho raha hai...</div>
+    <div class="error-msg" id="errorState"></div>
+  </div>
+
+  <div class="control-panel">
+    <div class="dashboard-title">
+      <span style="font-weight:800;color:#e2e8f0;">🗓️ DATE RANGE FILTER</span>
+      <button id="newAuditLaunchBtn" class="btn btn-yellow">✨ NEW AUDIT</button>
+    </div>
+
+    <div class="date-range-box">
+      <input type="date" id="startDate">
+      <input type="date" id="endDate">
+      <button id="applyDateFilterBtn" class="btn btn-primary">Apply Filter</button>
+      <button id="resetFilterBtn" class="btn btn-outline">Reset</button>
+    </div>
+
+    <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:5px;">
+      <button id="exportExcelBtn" class="btn btn-outline">📎 Export Excel</button>
+      <button id="exportPdfBtn" class="btn btn-outline">📄 Monthly Report PDF</button>
+      <button id="exportFinalPdfBtn" class="btn btn-outline">🧾 Final PDF Report</button>
+      <button id="refreshBtn" class="btn btn-outline">🔄 Refresh</button>
+    </div>
+
+    <div style="font-size:.65rem;margin-top:12px;color:#64748b;">
+      ⬤ Live Google Sheet Fetch | Password Protected Export | Date Range Report
+    </div>
+  </div>
+</div>
+
+<div class="table-wrapper">
+  <table id="masterAuditTableDisplay">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>IPD Number</th>
+        <th>Audit Date</th>
+        <th>Provisional Dx</th>
+        <th>Treatment</th>
+        <th>Plan of Care</th>
+        <th>Consultant Visit</th>
+        <th>Reassessment</th>
+        <th>Nursing +ve</th>
+        <th>Nursing Sign</th>
+        <th>Procedure</th>
+        <th>Monitoring During</th>
+        <th>Monitoring After</th>
+        <th>Procedure Safety</th>
+        <th>Pre-Anesthesia</th>
+        <th>Pre-Op</th>
+        <th>Operative</th>
+        <th>Post-Op</th>
+        <th>Anesthesia</th>
+        <th>Doctor Note</th>
+        <th>Safety</th>
+        <th>BT</th>
+        <th>Diet</th>
+        <th>Treatment Chart</th>
+        <th>Referral</th>
+        <th>Transfer</th>
+        <th>Discharge 1</th>
+        <th>Discharge 2</th>
+        <th>Death Physician</th>
+        <th>Death Info</th>
+        <th>Death Summary</th>
+        <th>Death Cause</th>
+        <th>Form 4</th>
+        <th>Score</th>
+      </tr>
+    </thead>
+    <tbody id="auditTableBodyList"></tbody>
+  </table>
+</div>
+
+<div class="footer-note">
+  Live report generated from Google Sheet
+</div>
+
+<div id="passwordModal" class="modal">
+  <div class="modal-card">
+    <h3>🔐 Enter Password</h3>
+    <input type="password" id="downloadPassword" placeholder="Enter password">
+    <div class="flex-btns">
+      <button id="modalConfirmBtn" class="btn btn-primary">Unlock</button>
+      <button id="modalCancelBtn" class="btn btn-outline">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const SHEET_URL = "https://script.google.com/macros/s/AKfycbyAgSOfduo44jzDubJbxEZZa04Z45gGMj-nl05DqK0Fleo4kz6rm739tBv47OFxE56k/exec";
+  const STATIC_PASSWORD = "Ashish1218";
+
+  let masterRecords = [];
+  let filteredRecords = [];
+  let pendingExportType = null;
+
+  const PARAMETER_LABELS = [
+    "Provisional Dx","Treatment","Plan of Care","Consultant Visit","Reassessment",
+    "Nursing +ve","Nursing Sign","Procedure","Monitoring During","Monitoring After",
+    "Procedure Safety Checklist","Pre-Anesthesia","Pre-Op","Operative","Post-Op",
+    "Anesthesia","Doctor Note","Safety","BT","Diet","Treatment Chart","Referral",
+    "Transfer","Discharge 1","Discharge 2","Death Physician","Death Info",
+    "Death Summary","Death Cause","Form 4"
+  ];
+
+  const COLUMN_NAMES = [
+    "ipd","auditDate","provisionalDx","treatment","planOfCare","consultantVisit","reassessment",
+    "nursingPositive","nursingSign","procedure","monitoringDuring","monitoringAfter","procedureSafetyChecklist",
+    "preAnesthesia","preOp","operative","postOp","anesthesia","doctorNote","safety","bt","diet",
+    "treatmentChart","referral","transfer","discharge1","discharge2","deathPhysician","deathInfo",
+    "deathSummary","deathCause","form4","score"
+  ];
+
+  function normalizeValue(value){
+    if(value === null || value === undefined) return "";
+    return String(value).trim();
+  }
+
+  function formatSheetDate(value){
+    const raw = normalizeValue(value);
+    if(!raw) return "";
+
+    if (/^\d{2}-\d{2}-\d{4}/.test(raw)) {
+      const parts = raw.split(" ")[0].split("-");
+      return `${parts[2]}-${parts[1]}-${parts[0]}`;
+    }
+
+    const d = new Date(raw);
+    if(!isNaN(d)) return d.toISOString().slice(0,10);
+
+    return raw;
+  }
+
+  function getDisplayDate(value){
+    const iso = formatSheetDate(value);
+    if(/^\d{4}-\d{2}-\d{2}$/.test(iso)){
+      const [y,m,d] = iso.split("-");
+      return `${d}-${m}-${y}`;
+    }
+    return value || "-";
+  }
+
+  function getParameterValues(record){
+    return [
+      record.provisionalDx, record.treatment, record.planOfCare, record.consultantVisit, record.reassessment,
+      record.nursingPositive, record.nursingSign, record.procedure, record.monitoringDuring, record.monitoringAfter,
+      record.procedureSafetyChecklist, record.preAnesthesia, record.preOp, record.operative, record.postOp,
+      record.anesthesia, record.doctorNote, record.safety, record.bt, record.diet, record.treatmentChart,
+      record.referral, record.transfer, record.discharge1, record.discharge2, record.deathPhysician,
+      record.deathInfo, record.deathSummary, record.deathCause, record.form4
+    ];
+  }
+
+  function computeRowCompliance(record){
+    let yes = 0;
+    let totalValid = 0;
+
+    getParameterValues(record).forEach(val => {
+      const v = normalizeValue(val).toLowerCase();
+      if(v !== "" && v !== "na" && v !== "n/a"){
+        totalValid++;
+        if(v === "yes") yes++;
+      }
+    });
+
+    return {
+      yes,
+      totalValid,
+      percent: totalValid ? (yes / totalValid) * 100 : 0
+    };
+  }
+
+  function computeParameterSummary(records){
+    return PARAMETER_LABELS.map((label, idx) => {
+      let yes = 0;
+      let total = 0;
+      records.forEach(rec => {
+        const v = normalizeValue(getParameterValues(rec)[idx]).toLowerCase();
+        if(v !== "" && v !== "na" && v !== "n/a"){
+          total++;
+          if(v === "yes") yes++;
+        }
+      });
+      return {
+        label,
+        yes,
+        total,
+        incomplete: total - yes,
+        percent: total ? ((yes / total) * 100) : 0
+      };
+    });
+  }
+
+  function updateDashboard(){
+    const totalIpd = filteredRecords.length;
+    let auditedFiles = 0;
+    let totalParamsAudited = 0;
+    let totalIncompleteParams = 0;
+    let totalYesSum = 0;
+    let totalValidSum = 0;
+
+    filteredRecords.forEach(rec => {
+      const { yes, totalValid } = computeRowCompliance(rec);
+      if(totalValid > 0) auditedFiles++;
+      totalParamsAudited += totalValid;
+      totalIncompleteParams += (totalValid - yes);
+      totalYesSum += yes;
+      totalValidSum += totalValid;
+    });
+
+    const overallPercent = totalValidSum ? ((totalYesSum / totalValidSum) * 100) : 0;
+
+    document.getElementById("totalIpdCount").innerText = totalIpd;
+    document.getElementById("auditedCount").innerText = auditedFiles;
+    document.getElementById("totalParams").innerText = totalParamsAudited;
+    document.getElementById("incompleteParams").innerText = totalIncompleteParams;
+    document.getElementById("compliancePercent").innerText = overallPercent.toFixed(1) + "%";
+    document.getElementById("complianceDetail").innerText = `${totalYesSum}/${totalValidSum} parameters compliant`;
+
+    renderTable();
+  }
+
+  function renderTable(){
+    const tbody = document.getElementById("auditTableBodyList");
+    tbody.innerHTML = "";
+
+    filteredRecords.forEach((rec, idx) => {
+      const row = tbody.insertRow();
+      row.insertCell(0).innerText = idx + 1;
+      row.insertCell(1).innerText = rec.ipd || "-";
+      row.insertCell(2).innerText = getDisplayDate(rec.auditDate);
+
+      const values = getParameterValues(rec);
+      values.forEach(value => {
+        const td = row.insertCell();
+        const val = normalizeValue(value);
+        if(val.toLowerCase() === "yes"){
+          td.innerHTML = `<span class="badge-yes">Yes</span>`;
+        } else if(val.toLowerCase() === "no"){
+          td.innerHTML = `<span class="badge-no">No</span>`;
+        } else {
+          td.innerText = val;
+        }
+      });
+
+      const scoreCell = row.insertCell();
+      const { yes, totalValid } = computeRowCompliance(rec);
+      scoreCell.innerHTML = `<strong style="color:#a5f3fc;">${yes}/${totalValid}</strong>`;
+    });
+  }
+
+  function applyDateFilterInternal(){
+    const start = document.getElementById("startDate").value;
+    const end = document.getElementById("endDate").value;
+
+    filteredRecords = masterRecords.filter(rec => {
+      const recDate = formatSheetDate(rec.auditDate);
+      if(!recDate || !/^\d{4}-\d{2}-\d{2}$/.test(recDate)) return false;
+      if(start && recDate < start) return false;
+      if(end && recDate > end) return false;
+      return true;
+    });
+
+    updateDashboard();
+  }
+
+  function resetFilter(){
+    const dates = masterRecords
+      .map(r => formatSheetDate(r.auditDate))
+      .filter(d => /^\d{4}-\d{2}-\d{2}$/.test(d))
+      .sort();
+
+    if(dates.length){
+      document.getElementById("startDate").value = dates[0];
+      document.getElementById("endDate").value = dates[dates.length - 1];
+    } else {
+      document.getElementById("startDate").value = "";
+      document.getElementById("endDate").value = "";
+    }
+
+    applyDateFilterInternal();
+  }
+
+  async function loadDataFromSheet(){
+    document.getElementById("loadingState").style.display = "block";
+    document.getElementById("errorState").innerText = "";
+
+    try{
+      const res = await fetch(SHEET_URL);
+      const data = await res.json();
+
+      if(!Array.isArray(data) || data.length < 2){
+        throw new Error("Sheet data empty hai.");
+      }
+
+      masterRecords = data.slice(1).map(row => ({
+        ipd: normalizeValue(row[2]),
+        auditDate: normalizeValue(row[0]),
+        provisionalDx: normalizeValue(row[3]),
+        treatment: normalizeValue(row[4]),
+        planOfCare: normalizeValue(row[5]),
+        consultantVisit: normalizeValue(row[6]),
+        reassessment: normalizeValue(row[7]),
+        nursingPositive: normalizeValue(row[8]),
+        nursingSign: normalizeValue(row[9]),
+        procedure: normalizeValue(row[10]),
+        monitoringDuring: normalizeValue(row[11]),
+        monitoringAfter: normalizeValue(row[12]),
+        procedureSafetyChecklist: normalizeValue(row[13]),
+        preAnesthesia: normalizeValue(row[14]),
+        preOp: normalizeValue(row[15]),
+        operative: normalizeValue(row[16]),
+        postOp: normalizeValue(row[17]),
+        anesthesia: normalizeValue(row[18]),
+        doctorNote: normalizeValue(row[19]),
+        safety: normalizeValue(row[20]),
+        bt: normalizeValue(row[21]),
+        diet: normalizeValue(row[22]),
+        treatmentChart: normalizeValue(row[23]),
+        referral: normalizeValue(row[24]),
+        transfer: normalizeValue(row[25]),
+        discharge1: normalizeValue(row[26]),
+        discharge2: normalizeValue(row[27]),
+        deathPhysician: normalizeValue(row[28]),
+        deathInfo: normalizeValue(row[29]),
+        deathSummary: normalizeValue(row[30]),
+        deathCause: normalizeValue(row[31]),
+        form4: normalizeValue(row[32]),
+        score: normalizeValue(row[33])
+      })).filter(r => r.ipd);
+
+      resetFilter();
+      document.getElementById("loadingState").style.display = "none";
+
+    } catch(err){
+      document.getElementById("loadingState").style.display = "none";
+      document.getElementById("errorState").innerText = "Error: " + err.message;
+      masterRecords = [];
+      filteredRecords = [];
+      updateDashboard();
+    }
+  }
+
+  function showPasswordModal(type){
+    pendingExportType = type;
+    document.getElementById("downloadPassword").value = "";
+    document.getElementById("passwordModal").classList.add("show");
+    setTimeout(() => document.getElementById("downloadPassword").focus(), 100);
+  }
+
+  function hidePasswordModal(){
+    document.getElementById("passwordModal").classList.remove("show");
+    pendingExportType = null;
+  }
+
+  function confirmPasswordAndExport(){
+    const pwd = document.getElementById("downloadPassword").value;
+    if(pwd !== STATIC_PASSWORD){
+      alert("❌ Wrong password");
+      return;
+    }
+
+    const type = pendingExportType;
+    hidePasswordModal();
+
+    if(type === "excel") exportToExcelInternal();
+    else if(type === "monthlyPdf") exportMonthlyPdfInternal();
+    else if(type === "finalPdf") exportFinalPdfInternal();
+  }
+
+  function exportToExcel(){
+    if(!filteredRecords.length){
+      alert("Export ke liye data nahi hai.");
+      return;
+    }
+    showPasswordModal("excel");
+  }
+
+  function exportToExcelInternal(){
+    const exportRows = filteredRecords.map((rec, idx) => {
+      const { yes, totalValid } = computeRowCompliance(rec);
+      return {
+        "ID": idx + 1,
+        "IPD Number": rec.ipd,
+        "Audit Date": getDisplayDate(rec.auditDate),
+        "Provisional Dx": rec.provisionalDx,
+        "Treatment": rec.treatment,
+        "Plan of Care": rec.planOfCare,
+        "Consultant Visit": rec.consultantVisit,
+        "Reassessment": rec.reassessment,
+        "Nursing +ve": rec.nursingPositive,
+        "Nursing Sign": rec.nursingSign,
+        "Procedure": rec.procedure,
+        "Monitoring During": rec.monitoringDuring,
+        "Monitoring After": rec.monitoringAfter,
+        "Procedure Safety Checklist": rec.procedureSafetyChecklist,
+        "Pre-Anesthesia": rec.preAnesthesia,
+        "Pre-Op": rec.preOp,
+        "Operative": rec.operative,
+        "Post-Op": rec.postOp,
+        "Anesthesia": rec.anesthesia,
+        "Doctor Note": rec.doctorNote,
+        "Safety": rec.safety,
+        "BT": rec.bt,
+        "Diet": rec.diet,
+        "Treatment Chart": rec.treatmentChart,
+        "Referral": rec.referral,
+        "Transfer": rec.transfer,
+        "Discharge 1": rec.discharge1,
+        "Discharge 2": rec.discharge2,
+        "Death Physician": rec.deathPhysician,
+        "Death Info": rec.deathInfo,
+        "Death Summary": rec.deathSummary,
+        "Death Cause": rec.deathCause,
+        "Form 4": rec.form4,
+        "Score": `${yes}/${totalValid}`
+      };
+    });
+
+    const ws = XLSX.utils.json_to_sheet(exportRows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "AuditReport");
+    XLSX.writeFile(wb, `Audit_Report_${new Date().toISOString().slice(0,10)}.xlsx`);
+  }
+
+  function exportToPdf(){
+    if(!filteredRecords.length){
+      alert("PDF ke liye data nahi hai.");
+      return;
+    }
+    showPasswordModal("monthlyPdf");
+  }
+
+  function groupRecordsByDate(records){
+    const grouped = {};
+    records.forEach(rec => {
+      const d = formatSheetDate(rec.auditDate) || "Unknown";
+      if(!grouped[d]) grouped[d] = [];
+      grouped[d].push(rec);
+    });
+    return grouped;
+  }
+
+  function exportMonthlyPdfInternal(){
+    const grouped = groupRecordsByDate(filteredRecords);
+    const wrapper = document.createElement("div");
+    wrapper.style.fontFamily = "Inter, sans-serif";
+    wrapper.style.background = "#ffffff";
+    wrapper.style.color = "#000000";
+
+    Object.keys(grouped).sort().forEach((dateKey, index) => {
+      const dayRecords = grouped[dateKey];
+      const page = document.createElement("div");
+      page.style.padding = "18px 16px";
+      page.style.pageBreakAfter = "always";
+
+      const displayDate = getDisplayDate(dateKey);
+
+      let totalYes = 0;
+      let totalValid = 0;
+      dayRecords.forEach(r => {
+        const c = computeRowCompliance(r);
+        totalYes += c.yes;
+        totalValid += c.totalValid;
+      });
+
+      const paramSummary = computeParameterSummary(dayRecords);
+
+      let html = `
+        <div style="font-size:20px;font-weight:800;color:#000;margin-bottom:8px;">AUDIT</div>
+        <div style="font-size:13px;margin-bottom:12px;">
+          <strong>Date:</strong> ${displayDate}
+        </div>
+        <table style="width:100%;border-collapse:collapse;font-size:10px;margin-bottom:12px;" border="1">
+          <thead>
+            <tr style="background:#f1f5f9;">
+              <th style="padding:6px;">S.N</th>
+              <th style="padding:6px;">IPD</th>
+              <th style="padding:6px;">Score</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+
+      dayRecords.forEach((rec, i) => {
+        const c = computeRowCompliance(rec);
+        html += `
+          <tr>
+            <td style="padding:6px;text-align:center;">${i + 1}</td>
+            <td style="padding:6px;text-align:center;">${rec.ipd}</td>
+            <td style="padding:6px;text-align:center;">${c.yes}/${c.totalValid}</td>
+          </tr>
+        `;
+      });
+
+      html += `
+          </tbody>
+        </table>
+
+        <div style="font-size:12px;font-weight:700;margin:8px 0 6px 0;">Parameter Score Summary</div>
+        <table style="width:100%;border-collapse:collapse;font-size:9px;margin-bottom:12px;" border="1">
+          <thead>
+            <tr style="background:#f8fafc;">
+              <th style="padding:5px;">Parameter</th>
+              <th style="padding:5px;">Score</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+
+      paramSummary.forEach(p => {
+        html += `
+          <tr>
+            <td style="padding:5px;">${p.label}</td>
+            <td style="padding:5px;text-align:center;">${p.yes}/${p.total}</td>
+          </tr>
+        `;
+      });
+
+      html += `
+          </tbody>
+        </table>
+
+        <div style="font-size:12px;margin-top:8px;">
+          <strong>Audit Date & Time:</strong> ${new Date().toLocaleString()}
+        </div>
+        <div style="font-size:12px;margin-top:4px;">
+          <strong>Day Overall Score:</strong> ${totalYes}/${totalValid}
+        </div>
+      `;
+
+      page.innerHTML = html;
+      wrapper.appendChild(page);
+    });
+
+    const opt = {
+      margin: [0.35, 0.35, 0.35, 0.35],
+      filename: `Monthly_Audit_Report_${new Date().toISOString().slice(0,10)}.pdf`,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2 },
+      jsPDF: { unit: 'in', format: 'a4', orientation: 'landscape' }
+    };
+
+    html2pdf().set(opt).from(wrapper).save();
+  }
+
+  function exportFinalPdf(){
+    if(!filteredRecords.length){
+      alert("Final PDF ke liye data nahi hai.");
+      return;
+    }
+    showPasswordModal("finalPdf");
+  }
+
+  function exportFinalPdfInternal(){
+    const paramSummary = computeParameterSummary(filteredRecords);
+    const overall = paramSummary.reduce((acc, p) => {
+      acc.total += p.total;
+      acc.yes += p.yes;
+      acc.incomplete += p.incomplete;
+      return acc;
+    }, { total: 0, yes: 0, incomplete: 0 });
+
+    const overallPercent = overall.total ? ((overall.yes / overall.total) * 100) : 0;
+
+    const page = document.createElement("div");
+    page.style.padding = "20px";
+    page.style.fontFamily = "Inter, sans-serif";
+    page.style.background = "#ffffff";
+    page.style.color = "#000000";
+
+    let html = `
+      <div style="font-size:22px;font-weight:800;color:#000;margin-bottom:10px;">FINAL AUDIT REPORT</div>
+      <div style="font-size:13px;margin-bottom:10px;">
+        <strong>Report Range:</strong> ${document.getElementById("startDate").value || "all"} to ${document.getElementById("endDate").value || "all"}
+      </div>
+
+      <table style="width:100%;border-collapse:collapse;font-size:10px;" border="1">
+        <thead>
+          <tr style="background:#f1f5f9;">
+            <th style="padding:6px;">Parameter</th>
+            <th style="padding:6px;">Total Parameter Audited</th>
+            <th style="padding:6px;">Incomplete</th>
+            <th style="padding:6px;">Percentage</th>
+          </tr>
+        </thead>
+        <tbody>
+    `;
+
+    paramSummary.forEach(p => {
+      html += `
+        <tr>
+          <td style="padding:6px;">${p.label}</td>
+          <td style="padding:6px;text-align:center;">${p.total}</td>
+          <td style="padding:6px;text-align:center;">${p.incomplete}</td>
+          <td style="padding:6px;text-align:center;">${p.percent.toFixed(1)}%</td>
+        </tr>
+      `;
+    });
+
+    html += `
+        </tbody>
+      </table>
+
+      <div style="margin-top:16px;font-size:14px;">
+        <div><strong>Total Parameters Audited:</strong> ${overall.total}</div>
+        <div><strong>Total Incomplete Parameters:</strong> ${overall.incomplete}</div>
+        <div><strong>Overall Percentage:</strong> ${overallPercent.toFixed(1)}%</div>
+        <div style="margin-top:10px;"><strong>Generated At:</strong> ${new Date().toLocaleString()}</div>
+      </div>
+    `;
+
+    page.innerHTML = html;
+
+    const opt = {
+      margin: [0.45, 0.45, 0.45, 0.45],
+      filename: `Final_Audit_Report_${new Date().toISOString().slice(0,10)}.pdf`,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2 },
+      jsPDF: { unit: 'in', format: 'a4', orientation: 'landscape' }
+    };
+
+    html2pdf().set(opt).from(page).save();
+  }
+
+  function openNewAuditPage(){
+    window.open("audit.html", "_blank");
+  }
+
+  document.getElementById("applyDateFilterBtn").addEventListener("click", applyDateFilterInternal);
+  document.getElementById("resetFilterBtn").addEventListener("click", resetFilter);
+  document.getElementById("exportExcelBtn").addEventListener("click", exportToExcel);
+  document.getElementById("exportPdfBtn").addEventListener("click", exportToPdf);
+  document.getElementById("exportFinalPdfBtn").addEventListener("click", exportFinalPdf);
+  document.getElementById("refreshBtn").addEventListener("click", loadDataFromSheet);
+  document.getElementById("newAuditLaunchBtn").addEventListener("click", openNewAuditPage);
+  document.getElementById("modalConfirmBtn").addEventListener("click", confirmPasswordAndExport);
+  document.getElementById("modalCancelBtn").addEventListener("click", hidePasswordModal);
+
+  document.getElementById("downloadPassword").addEventListener("keydown", function(e){
+    if(e.key === "Enter") confirmPasswordAndExport();
+  });
+
+  window.onload = loadDataFromSheet;
+</script>
+
+</body>
+</html>
