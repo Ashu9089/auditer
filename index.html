@@ -465,7 +465,7 @@
 </div>
 
 <script>
-  const SHEET_URL = "https://script.google.com/macros/s/AKfycbyAgSOfduo44jzDubJbxEZZa04Z45gGMj-nl05DqK0Fleo4kz6rm739tBv47OFxE56k/exec";
+  const SHEET_URL = "https://script.google.com/macros/s/AKfycbyVbe0sbS8G5ZKKymX7ng3bKMFEu8IE-kgfV5ggXVjL9T80IdlKxVHt8DcGiQBVAs18/exec";
   const STATIC_PASSWORD = "Ashish1218";
 
   let masterRecords = [];
@@ -660,64 +660,81 @@
   }
 
   async function loadDataFromSheet(){
-    document.getElementById("loadingState").style.display = "block";
-    document.getElementById("errorState").innerText = "";
 
-    try{
-      const res = await fetch(SHEET_URL);
-      const data = await res.json();
+  document.getElementById("loadingState").style.display = "block";
+  document.getElementById("errorState").innerText = "";
 
-      if(!Array.isArray(data) || data.length < 2){
-        throw new Error("Sheet data empty hai.");
+  try {
+
+    const res = await fetch(SHEET_URL, {
+      method: "GET",
+      mode: "cors",
+      headers: {
+        "Content-Type": "application/json"
       }
+    });
 
-      masterRecords = data.slice(1).map(row => ({
-        ipd: normalizeValue(row[2]),
-        auditDate: normalizeValue(row[0]),
-        provisionalDx: normalizeValue(row[3]),
-        treatment: normalizeValue(row[4]),
-        planOfCare: normalizeValue(row[5]),
-        consultantVisit: normalizeValue(row[6]),
-        reassessment: normalizeValue(row[7]),
-        nursingPositive: normalizeValue(row[8]),
-        nursingSign: normalizeValue(row[9]),
-        procedure: normalizeValue(row[10]),
-        monitoringDuring: normalizeValue(row[11]),
-        monitoringAfter: normalizeValue(row[12]),
-        procedureSafetyChecklist: normalizeValue(row[13]),
-        preAnesthesia: normalizeValue(row[14]),
-        preOp: normalizeValue(row[15]),
-        operative: normalizeValue(row[16]),
-        postOp: normalizeValue(row[17]),
-        anesthesia: normalizeValue(row[18]),
-        doctorNote: normalizeValue(row[19]),
-        safety: normalizeValue(row[20]),
-        bt: normalizeValue(row[21]),
-        diet: normalizeValue(row[22]),
-        treatmentChart: normalizeValue(row[23]),
-        referral: normalizeValue(row[24]),
-        transfer: normalizeValue(row[25]),
-        discharge1: normalizeValue(row[26]),
-        discharge2: normalizeValue(row[27]),
-        deathPhysician: normalizeValue(row[28]),
-        deathInfo: normalizeValue(row[29]),
-        deathSummary: normalizeValue(row[30]),
-        deathCause: normalizeValue(row[31]),
-        form4: normalizeValue(row[32]),
-        score: normalizeValue(row[33])
-      })).filter(r => r.ipd);
+    const data = await res.json();
 
-      resetFilter();
-      document.getElementById("loadingState").style.display = "none";
-
-    } catch(err){
-      document.getElementById("loadingState").style.display = "none";
-      document.getElementById("errorState").innerText = "Error: " + err.message;
-      masterRecords = [];
-      filteredRecords = [];
-      updateDashboard();
+    if(!Array.isArray(data) || data.length < 2){
+      throw new Error("Sheet data empty hai.");
     }
+
+    masterRecords = data.slice(1).map(row => ({
+      ipd: normalizeValue(row[2]),
+      auditDate: normalizeValue(row[0]),
+      provisionalDx: normalizeValue(row[3]),
+      treatment: normalizeValue(row[4]),
+      planOfCare: normalizeValue(row[5]),
+      consultantVisit: normalizeValue(row[6]),
+      reassessment: normalizeValue(row[7]),
+      nursingPositive: normalizeValue(row[8]),
+      nursingSign: normalizeValue(row[9]),
+      procedure: normalizeValue(row[10]),
+      monitoringDuring: normalizeValue(row[11]),
+      monitoringAfter: normalizeValue(row[12]),
+      procedureSafetyChecklist: normalizeValue(row[13]),
+      preAnesthesia: normalizeValue(row[14]),
+      preOp: normalizeValue(row[15]),
+      operative: normalizeValue(row[16]),
+      postOp: normalizeValue(row[17]),
+      anesthesia: normalizeValue(row[18]),
+      doctorNote: normalizeValue(row[19]),
+      safety: normalizeValue(row[20]),
+      bt: normalizeValue(row[21]),
+      diet: normalizeValue(row[22]),
+      treatmentChart: normalizeValue(row[23]),
+      referral: normalizeValue(row[24]),
+      transfer: normalizeValue(row[25]),
+      discharge1: normalizeValue(row[26]),
+      discharge2: normalizeValue(row[27]),
+      deathPhysician: normalizeValue(row[28]),
+      deathInfo: normalizeValue(row[29]),
+      deathSummary: normalizeValue(row[30]),
+      deathCause: normalizeValue(row[31]),
+      form4: normalizeValue(row[32]),
+      score: normalizeValue(row[33])
+    })).filter(r => r.ipd);
+
+    resetFilter();
+
+    document.getElementById("loadingState").style.display = "none";
+
+  } catch(err){
+
+    document.getElementById("loadingState").style.display = "none";
+
+    document.getElementById("errorState").innerText =
+      "Error: " + err.message;
+
+    console.error(err);
+
+    masterRecords = [];
+    filteredRecords = [];
+
+    updateDashboard();
   }
+}
 
   function showPasswordModal(type){
     pendingExportType = type;
