@@ -465,7 +465,7 @@
 </div>
 
 <script>
-  const SHEET_URL = "https://script.google.com/macros/s/AKfycbw1SogbA2HYjqglExZ4iRiUGPHzj1YEvRuBngme5VjIPZQF0wtVqVig7iditdrQatwm/exec";
+  const SHEET_URL = "https://script.google.com/macros/s/AKfycbybHeF93jQHjWeuYYQG_Ikdpq1w8BzyMMgHClBD_JZuSV6Rz4cNkYUUo5XqiXMFjV_M/exec";
   const STATIC_PASSWORD = "Ashish1218";
 
   let masterRecords = [];
@@ -666,13 +666,7 @@
 
   try {
 
-    const res = await fetch(SHEET_URL, {
-      method: "GET",
-      mode: "cors",
-      headers: {
-        "Content-Type": "application/json"
-      }
-    });
+    const res = await fetch(SHEET_URL);
 
     const data = await res.json();
 
