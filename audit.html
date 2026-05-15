@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Auditer Master | MRD Clinical Suite</title>
+    <title>Auditer Master | MRD Clinical Suite | Duplicate Guard</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
     <style>
         * {
@@ -124,6 +124,7 @@
         .btn-group {
             display: flex;
             gap: 1rem;
+            align-items: center;
         }
         .btn {
             font-weight: 700;
@@ -145,7 +146,7 @@
             border: none;
             box-shadow: 0 4px 12px rgba(37,99,235,0.25);
         }
-        .btn-primary:hover {
+        .btn-primary:hover:not(:disabled) {
             transform: translateY(-2px);
             box-shadow: 0 12px 20px -12px rgba(37,99,235,0.45);
             background: linear-gradient(105deg, #3b82f6, #6366f1);
@@ -155,9 +156,18 @@
             color: white;
             box-shadow: 0 4px 12px rgba(5,150,105,0.25);
         }
-        .btn-success:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 12px 20px -12px rgba(5,150,105,0.45);
+        .btn-outline {
+            background: transparent;
+            border: 1px solid #3b82f6;
+            color: #1e40af;
+        }
+        .btn-outline:hover {
+            background: #eef2ff;
+        }
+        .btn:disabled {
+            opacity: 0.65;
+            cursor: not-allowed;
+            transform: none;
         }
 
         .table-vault {
@@ -193,6 +203,7 @@
             padding: 10px 5px;
             text-align: center;
             transition: all 0.12s;
+            position: relative;
         }
         .sub-header th {
             background: linear-gradient(110deg, #22668d, #2c7aa3);
@@ -326,8 +337,6 @@
         .row-animate {
             animation: fadeSlide 0.2s ease-out;
         }
-
-        /* toast notification animation */
         .toast-done {
             position: fixed;
             bottom: 30px;
@@ -364,6 +373,32 @@
             background-color: #fff0f0 !important;
             box-shadow: 0 0 0 2px rgba(239,68,68,0.2);
         }
+        .warning-tooltip {
+            position: absolute;
+            background: #ef4444;
+            color: white;
+            font-size: 0.65rem;
+            padding: 2px 8px;
+            border-radius: 50px;
+            white-space: nowrap;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            pointer-events: none;
+            z-index: 10;
+            font-weight: 600;
+        }
+        .btn-loading {
+            position: relative;
+            pointer-events: none;
+        }
+        .sync-badge {
+            font-size: 0.7rem;
+            background: #e6f7ec;
+            padding: 4px 12px;
+            border-radius: 30px;
+            color: #166534;
+        }
     </style>
 </head>
 <body>
@@ -388,6 +423,7 @@
             <input type="month" id="auditMonth" title="Review Month">
         </div>
         <div class="btn-group">
+            <button class="btn btn-outline" id="syncRemoteBtn">🔄 Sync Existing IPDs</button>
             <button class="btn btn-primary" id="addNewRecordBtn">✦ New Record</button>
             <button class="btn btn-success" id="submitToSheetsBtn">📤 Submit Audit</button>
         </div>
@@ -444,6 +480,7 @@
     <div class="score-summary">
         <div style="display: flex; align-items: center; gap: 12px;">
             <span style="font-weight: 800; background: #eef3ff; padding: 5px 15px; border-radius: 40px;">📈 TOTAL COMPLIANCE</span>
+            <span id="duplicateIndicator" class="sync-badge" style="background:#fee2e2; color:#b91c1c; display:none;">⚠️ Duplicate IPD detected</span>
         </div>
         <div class="total-ring">
             SCORE <span id="globalScoreDisplay">0/0</span>
@@ -452,29 +489,166 @@
     <div class="legend-note">
         <span>✅ Yes = compliant</span>
         <span>❌ No = alert highlight</span>
-        <span>⚪ N/A = excluded from scoring</span>
-        <span>✨ Click IPD to activate row</span>
+        <span>⚪ N/A = excluded</span>
+        <span>🔴 Red IPD = Already exists in Sheet (cannot submit)</span>
     </div>
 </div>
 
 <script>
-    // === CONFIGURATION ===
-    const TOTAL_SELECT_COLUMNS = 30;   // from Provisional Dx to Death Form4
+    const TOTAL_SELECT_COLUMNS = 30;
     const WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbxgWj_Wxk_zKuYdbod3CA8qTs4hZN2FW7Bp93xXTVFgXiAiP9FUL-gGxwgHAJqTA6DI/exec";
-
-    // Toast notification for submit animation
-    function showDoneAnimation(message = "✨ Audit submitted! All records cleared. ✨") {
+    
+    let isSubmitting = false;
+    let existingIPDsSet = new Set();      // Store all already-submitted IPDs (from localStorage + remote)
+    
+    // ---------- Load/Save local cache ----------
+    function loadExistingIPDsFromLocalStorage() {
+        const stored = localStorage.getItem("audit_submitted_ipds");
+        if (stored) {
+            try {
+                const arr = JSON.parse(stored);
+                existingIPDsSet.clear();
+                arr.forEach(ipd => existingIPDsSet.add(ipd.toLowerCase().trim()));
+            } catch(e) {}
+        }
+    }
+    
+    function saveExistingIPDsToLocalStorage() {
+        const arr = Array.from(existingIPDsSet);
+        localStorage.setItem("audit_submitted_ipds", JSON.stringify(arr));
+    }
+    
+    // Add IPDs after successful submit
+    function addIPDsToCache(ipdList) {
+        ipdList.forEach(ipd => {
+            if (ipd && ipd.trim()) existingIPDsSet.add(ipd.trim().toLowerCase());
+        });
+        saveExistingIPDsToLocalStorage();
+    }
+    
+    // Attempt to fetch existing IPDs from Google Sheet (if GET endpoint is configured)
+    async function fetchExistingIPDsFromSheet() {
+        // Try to get data from the webhook using GET? We'll append ?action=getAll
+        // If the Apps Script supports doGet, we can retrieve. Otherwise fallback to cache.
+        try {
+            const response = await fetch(`${WEBHOOK_URL}?action=getAll`, { method: "GET", mode: "cors" });
+            if (response.ok) {
+                const data = await response.json();
+                if (data && Array.isArray(data)) {
+                    const ipds = data.map(row => row[2] ? String(row[2]).trim().toLowerCase() : null).filter(v => v);
+                    ipds.forEach(ipd => existingIPDsSet.add(ipd));
+                    saveExistingIPDsToLocalStorage();
+                    showToast(`Synced ${ipds.length} existing IPDs from sheet.`, "#3b82f6");
+                    return true;
+                }
+            }
+        } catch (err) {
+            console.warn("Remote fetch failed, using localStorage cache only.", err);
+        }
+        return false;
+    }
+    
+    async function syncRemoteIPDs() {
+        const btn = document.getElementById("syncRemoteBtn");
+        const originalText = btn.innerHTML;
+        btn.innerHTML = "⏳ Syncing...";
+        btn.disabled = true;
+        await fetchExistingIPDsFromSheet();
+        // Re-validate all current rows after sync
+        validateAllIPDsInTable();
+        refreshAllAggregates();
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+        showToast("IPD cache updated from sheet", "#10b981");
+    }
+    
+    function showToast(msg, bgColor = "#10b981") {
         const toast = document.createElement("div");
         toast.className = "toast-done";
-        toast.innerHTML = `✅ ${message}`;
+        toast.style.background = `linear-gradient(125deg, ${bgColor}, ${bgColor}dd)`;
+        toast.innerHTML = `✅ ${msg}`;
         document.body.appendChild(toast);
         setTimeout(() => {
             toast.classList.add("exit");
             setTimeout(() => toast.remove(), 500);
-        }, 2800);
+        }, 2500);
     }
-
-    // create select field
+    
+    // Validate a single IPD input against existingIPDsSet + current table duplicates
+    function validateSingleIPD(ipdInput, row) {
+        const ipdVal = ipdInput.value.trim();
+        if (!ipdVal) {
+            ipdInput.classList.remove("ipd-duplicate-warning");
+            removeWarningTooltip(ipdInput);
+            return true;
+        }
+        const lowerIpd = ipdVal.toLowerCase();
+        let isDuplicateExternal = existingIPDsSet.has(lowerIpd);
+        
+        // Also check duplicate within current table (excluding self)
+        const rows = document.querySelectorAll("#auditTableBody tr");
+        let internalDuplicate = false;
+        for (let r of rows) {
+            if (r === row) continue;
+            const otherInput = r.cells[2]?.querySelector("input");
+            if (otherInput && otherInput.value.trim().toLowerCase() === lowerIpd) {
+                internalDuplicate = true;
+                break;
+            }
+        }
+        
+        const isDuplicate = isDuplicateExternal || internalDuplicate;
+        if (isDuplicate) {
+            ipdInput.classList.add("ipd-duplicate-warning");
+            addWarningTooltip(ipdInput, isDuplicateExternal ? "⚠️ IPD already exists in Google Sheet" : "⚠️ Duplicate IPD in current table");
+        } else {
+            ipdInput.classList.remove("ipd-duplicate-warning");
+            removeWarningTooltip(ipdInput);
+        }
+        return !isDuplicate;
+    }
+    
+    function addWarningTooltip(inputElem, message) {
+        removeWarningTooltip(inputElem);
+        const tooltip = document.createElement("div");
+        tooltip.className = "warning-tooltip";
+        tooltip.innerText = message;
+        inputElem.parentElement.style.position = "relative";
+        inputElem.parentElement.appendChild(tooltip);
+        inputElem._tooltip = tooltip;
+    }
+    
+    function removeWarningTooltip(inputElem) {
+        if (inputElem._tooltip) {
+            inputElem._tooltip.remove();
+            delete inputElem._tooltip;
+        }
+        if (inputElem.parentElement) {
+            const existing = inputElem.parentElement.querySelector(".warning-tooltip");
+            if (existing) existing.remove();
+        }
+    }
+    
+    function validateAllIPDsInTable() {
+        const rows = document.querySelectorAll("#auditTableBody tr");
+        let anyDuplicate = false;
+        rows.forEach(row => {
+            const ipdInput = row.cells[2]?.querySelector("input");
+            if (ipdInput) {
+                const valid = validateSingleIPD(ipdInput, row);
+                if (!valid) anyDuplicate = true;
+            }
+        });
+        const indicator = document.getElementById("duplicateIndicator");
+        if (anyDuplicate) {
+            indicator.style.display = "inline-block";
+        } else {
+            indicator.style.display = "none";
+        }
+        return !anyDuplicate;
+    }
+    
+    // --- Table row management ---
     function createElegantSelect() {
         const sel = document.createElement("select");
         sel.innerHTML = `<option value="Yes">✅ Yes</option><option value="No">❌ No</option><option value="NA">⚪ N/A</option>`;
@@ -485,7 +659,7 @@
         });
         return sel;
     }
-
+    
     function updateSingleRowScore(row) {
         const selects = row.querySelectorAll("select");
         let yes = 0, valid = 0;
@@ -501,11 +675,10 @@
         const scoreCell = row.querySelector(".score-gem");
         if (scoreCell) scoreCell.innerText = `${yes}/${valid}`;
     }
-
+    
     function refreshAllAggregates() {
         const rows = document.querySelectorAll("#auditTableBody tr");
         let globalYes = 0, globalTotal = 0;
-        
         rows.forEach(row => {
             const selects = row.querySelectorAll("select");
             let rowYes = 0, rowValid = 0;
@@ -526,7 +699,6 @@
         const footerRow = document.getElementById("columnScoreFooter");
         if (!footerRow) return;
         while (footerRow.cells.length > 1) footerRow.deleteCell(1);
-        
         for (let colIdx = 0; colIdx < TOTAL_SELECT_COLUMNS; colIdx++) {
             let colYes = 0, colValid = 0;
             rows.forEach(row => {
@@ -555,23 +727,19 @@
         footerRow.appendChild(spacer);
     }
     
-    // clear entire table body
     function clearAllRecords() {
         const tbody = document.getElementById("auditTableBody");
         tbody.innerHTML = "";
         refreshAllAggregates();
     }
-
-    // Build fresh row
+    
     function buildNewRow(serial) {
         const tr = document.createElement("tr");
         tr.className = "inactive-row";
-        
         const tdSn = document.createElement("td");
         tdSn.innerText = serial;
         tdSn.style.fontWeight = "800";
         tr.appendChild(tdSn);
-        
         const tdAction = document.createElement("td");
         const delBtn = document.createElement("button");
         delBtn.innerHTML = "🗑️";
@@ -579,36 +747,33 @@
         delBtn.onclick = function(e) { deleteRecord(this); };
         tdAction.appendChild(delBtn);
         tr.appendChild(tdAction);
-        
         const tdIpd = document.createElement("td");
         const ipdInput = document.createElement("input");
         ipdInput.type = "text";
         ipdInput.placeholder = "e.g., IPD-2456";
         ipdInput.style.width = "95px";
         ipdInput.addEventListener("focus", () => highlightRow(tr));
+        ipdInput.addEventListener("blur", () => {
+            validateSingleIPD(ipdInput, tr);
+            validateAllIPDsInTable();
+        });
         ipdInput.addEventListener("input", () => {
             highlightRow(tr);
-            removeDuplicateWarning(ipdInput);
+            ipdInput.classList.remove("ipd-duplicate-warning");
+            removeWarningTooltip(ipdInput);
         });
         tdIpd.appendChild(ipdInput);
         tr.appendChild(tdIpd);
-        
         for (let i = 0; i < TOTAL_SELECT_COLUMNS; i++) {
             const tdSel = document.createElement("td");
             tdSel.appendChild(createElegantSelect());
             tr.appendChild(tdSel);
         }
-        
         const tdScore = document.createElement("td");
         tdScore.className = "score-gem";
         tdScore.innerText = "0/0";
         tr.appendChild(tdScore);
-        
         return tr;
-    }
-    
-    function removeDuplicateWarning(inputElem) {
-        inputElem.classList.remove("ipd-duplicate-warning");
     }
     
     function highlightRow(row) {
@@ -622,18 +787,17 @@
     
     function deleteRecord(btnElement) {
         const row = btnElement.closest("tr");
-        if (row && confirm("⚠️ Remove this patient record from audit?")) {
+        if (row && confirm("Remove this patient record?")) {
             row.remove();
             renumberRows();
             refreshAllAggregates();
+            validateAllIPDsInTable();
         }
     }
     
     function renumberRows() {
         const rows = document.querySelectorAll("#auditTableBody tr");
-        rows.forEach((row, idx) => {
-            row.cells[0].innerText = idx + 1;
-        });
+        rows.forEach((row, idx) => { row.cells[0].innerText = idx + 1; });
     }
     
     function addRecord() {
@@ -645,7 +809,6 @@
         refreshAllAggregates();
         freshRow.classList.add("row-animate");
         setTimeout(() => freshRow.classList.remove("row-animate"), 300);
-        freshRow.scrollIntoView({ behavior: "smooth", block: "nearest" });
     }
     
     function formatAuditDateTime(raw) {
@@ -662,56 +825,31 @@
         return `${day}-${month}-${year} ${hrs12}:${mins} ${ampm}`;
     }
     
-    // Validate duplicate IPD in current table (non-empty IPDs)
-    function hasDuplicateIpdInTable() {
-        const rows = document.querySelectorAll("#auditTableBody tr");
-        const ipdMap = new Map(); // ipdValue -> row element
-        let duplicateFound = false;
-        rows.forEach(row => {
-            const ipdInput = row.cells[2]?.querySelector("input");
-            if (!ipdInput) return;
-            const ipdVal = ipdInput.value.trim();
-            if (ipdVal === "") return;
-            const lowerKey = ipdVal.toLowerCase();
-            if (ipdMap.has(lowerKey)) {
-                duplicateFound = true;
-                // highlight both inputs
-                const existingRow = ipdMap.get(lowerKey);
-                const existingInput = existingRow.cells[2]?.querySelector("input");
-                if (existingInput) existingInput.classList.add("ipd-duplicate-warning");
-                ipdInput.classList.add("ipd-duplicate-warning");
-            } else {
-                ipdMap.set(lowerKey, row);
-            }
-        });
-        return duplicateFound;
-    }
-    
-    // submit logic with duplicate prevention + auto-clear after success + animation
-    function submitAuditData() {
-        // First: duplicate IPD validation
-        if (hasDuplicateIpdInTable()) {
-            alert("❌ Duplicate IPD Number found! Please ensure each IPD number is unique before submitting.");
+    // Final submit with duplicate guard (remote cache)
+    async function submitAuditData() {
+        if (isSubmitting) return;
+        // Revalidate all IPDs against cache
+        const isValid = validateAllIPDsInTable();
+        if (!isValid) {
+            alert("❌ One or more IPD numbers already exist in Google Sheet (or duplicate within table). Please remove or modify duplicates before submitting.");
             return;
         }
-        
         const dateTimeRaw = document.getElementById("auditDateTime").value;
         const formattedDateTime = formatAuditDateTime(dateTimeRaw);
         const monthVal = document.getElementById("auditMonth").value;
         const rows = document.querySelectorAll("#auditTableBody tr");
         const payload = [];
         let hasValidRecords = false;
+        const ipdsToAdd = [];
         
         for (let row of rows) {
-            const ipdInputField = row.cells[2]?.querySelector("input");
-            const ipdValue = ipdInputField ? ipdInputField.value.trim() : "";
+            const ipdInput = row.cells[2]?.querySelector("input");
+            const ipdValue = ipdInput ? ipdInput.value.trim() : "";
             if (ipdValue === "") continue;
             hasValidRecords = true;
+            ipdsToAdd.push(ipdValue);
             const record = [];
-            record.push(formattedDateTime);
-            record.push(monthVal);
-            record.push(ipdValue);
-            
+            record.push(formattedDateTime, monthVal, ipdValue);
             for (let i = 0; i < TOTAL_SELECT_COLUMNS; i++) {
                 const selectCell = row.cells[i + 3];
                 const selectEl = selectCell ? selectCell.querySelector("select") : null;
@@ -723,36 +861,42 @@
         }
         
         if (!hasValidRecords || payload.length === 0) {
-            alert("❌ No valid records with IPD number. Please fill at least one IPD field before submit.");
+            alert("❌ No valid IPD records to submit.");
             return;
         }
         
-        // Perform submission
-        fetch(WEBHOOK_URL, {
-            method: "POST",
-            mode: "no-cors",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload)
-        })
-        .then(() => {
-            // Success: clear all records, show done animation, reset global aggregates
-            clearAllRecords();   // removes all rows -> fresh state
-            renumberRows();      // no rows but safe
+        isSubmitting = true;
+        const submitBtn = document.getElementById("submitToSheetsBtn");
+        const originalText = submitBtn.innerHTML;
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = "⏳ Submitting...";
+        
+        try {
+            await fetch(WEBHOOK_URL, {
+                method: "POST",
+                mode: "no-cors",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+            // Update cache with newly submitted IPDs
+            addIPDsToCache(ipdsToAdd);
+            clearAllRecords();
+            renumberRows();
             refreshAllAggregates();
-            showDoneAnimation(`✔️ ${payload.length} record(s) synced. All data cleared. + New records ready`);
-            
-            // optional: small visual pulse on submit button
-            const btn = document.getElementById("submitToSheetsBtn");
-            btn.style.transform = "scale(0.98)";
-            setTimeout(() => btn.style.transform = "", 200);
-        })
-        .catch(err => {
-            console.warn(err);
-            alert("⚠️ Network issue. Data may not have been saved. Please check connection and try again. Records not cleared.");
-        });
+            validateAllIPDsInTable();
+            showToast(`✔️ ${payload.length} record(s) synced. Duplicates now blocked.`, "#10b981");
+        } catch (err) {
+            console.error(err);
+            alert("Network error. Data not saved.");
+        } finally {
+            setTimeout(() => {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalText;
+                isSubmitting = false;
+            }, 700);
+        }
     }
     
-    // Seed a demo row for initial load (non-duplicate IPD)
     function seedInitialRow() {
         const tbody = document.getElementById("auditTableBody");
         const demoRow = buildNewRow(1);
@@ -771,25 +915,25 @@
         }
         tbody.appendChild(demoRow);
         updateSingleRowScore(demoRow);
+        setTimeout(() => validateAllIPDsInTable(), 50);
     }
     
-    // initialization
-    window.onload = () => {
+    window.onload = async () => {
         const now = new Date();
         const localIso = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0,16);
         document.getElementById("auditDateTime").value = localIso;
-        const currentYearMonth = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-        document.getElementById("auditMonth").value = currentYearMonth;
+        document.getElementById("auditMonth").value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+        
+        loadExistingIPDsFromLocalStorage();
+        // optional: try to sync remotely (non-blocking)
+        fetchExistingIPDsFromSheet().catch(e=>console.warn);
         
         seedInitialRow();
         refreshAllAggregates();
-        
         document.getElementById("addNewRecordBtn").addEventListener("click", addRecord);
         document.getElementById("submitToSheetsBtn").addEventListener("click", submitAuditData);
+        document.getElementById("syncRemoteBtn").addEventListener("click", syncRemoteIPDs);
     };
-    
-    window.refreshAllAggregates = refreshAllAggregates;
-    window.updateSingleRowScore = updateSingleRowScore;
 </script>
 </body>
 </html>
