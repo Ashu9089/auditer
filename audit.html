@@ -20,7 +20,6 @@
             position: relative;
         }
 
-        /* animated background grain */
         body::before {
             content: '';
             position: fixed;
@@ -33,7 +32,6 @@
             z-index: 0;
         }
 
-        /* premium glass container */
         .luxe-container {
             max-width: 100%;
             background: rgba(255, 255, 255, 0.96);
@@ -46,7 +44,6 @@
             z-index: 2;
         }
 
-        /* header with jewel accent */
         .hero-section {
             display: flex;
             justify-content: space-between;
@@ -78,9 +75,7 @@
             border-radius: 40px;
             color: white;
             background-clip: unset;
-            -webkit-background-clip: unset;
             font-weight: 600;
-            letter-spacing: 0;
         }
         .pill-badge {
             background: rgba(59,130,246,0.12);
@@ -93,7 +88,6 @@
             border: 1px solid rgba(59,130,246,0.3);
         }
 
-        /* elevated control panel */
         .control-panel {
             display: flex;
             gap: 1.2rem;
@@ -121,7 +115,6 @@
             font-weight: 500;
             font-family: 'Inter', monospace;
             transition: all 0.2s;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.02);
         }
         .date-group input:focus {
             outline: none;
@@ -167,7 +160,6 @@
             box-shadow: 0 12px 20px -12px rgba(5,150,105,0.45);
         }
 
-        /* table wrapper - premium scroll */
         .table-vault {
             overflow-x: auto;
             border-radius: 1.5rem;
@@ -207,13 +199,10 @@
             font-weight: 600;
             font-size: 0.65rem;
             text-transform: none;
-            letter-spacing: 0.2px;
         }
-        /* row highlight - elegant aurora */
         .active-row td {
             background: linear-gradient(110deg, #fff9e8, #fff5e0) !important;
             box-shadow: inset 0 0 0 1px #fbbf24;
-            position: relative;
         }
         .inactive-row td {
             background: #ffffff;
@@ -223,7 +212,6 @@
             border-left: 3px solid #ef4444;
             font-weight: 600;
         }
-        /* modern select design */
         select {
             width: 100%;
             padding: 6px 4px;
@@ -264,7 +252,6 @@
             font-size: 0.8rem;
             color: #1e3a8a;
             font-family: 'Inter', monospace;
-            text-shadow: 0 1px 0 white;
         }
         tfoot td {
             background: linear-gradient(95deg, #f1f6fe, #eef3fc);
@@ -274,7 +261,6 @@
             padding: 10px 5px;
             font-size: 0.7rem;
         }
-        /* summary card - premium glass */
         .score-summary {
             margin-top: 1.8rem;
             background: linear-gradient(115deg, #ffffff, #fafdff);
@@ -339,6 +325,44 @@
         }
         .row-animate {
             animation: fadeSlide 0.2s ease-out;
+        }
+
+        /* toast notification animation */
+        .toast-done {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: linear-gradient(125deg, #10b981, #059669);
+            color: white;
+            padding: 14px 28px;
+            border-radius: 60px;
+            font-weight: 700;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            z-index: 2000;
+            box-shadow: 0 20px 35px -12px rgba(0,0,0,0.3);
+            backdrop-filter: blur(8px);
+            font-family: 'Inter', monospace;
+            animation: slideUpFade 0.35s cubic-bezier(0.2, 0.9, 0.4, 1.1) forwards;
+            pointer-events: none;
+            letter-spacing: 0.3px;
+        }
+        @keyframes slideUpFade {
+            0% { opacity: 0; transform: translateY(40px) scale(0.9); }
+            100% { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .toast-done.exit {
+            animation: fadeOutDown 0.4s ease forwards;
+        }
+        @keyframes fadeOutDown {
+            to { opacity: 0; transform: translateY(30px); visibility: hidden; }
+        }
+        .ipd-duplicate-warning {
+            border: 2px solid #ef4444 !important;
+            background-color: #fff0f0 !important;
+            box-shadow: 0 0 0 2px rgba(239,68,68,0.2);
         }
     </style>
 </head>
@@ -438,7 +462,19 @@
     const TOTAL_SELECT_COLUMNS = 30;   // from Provisional Dx to Death Form4
     const WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbxgWj_Wxk_zKuYdbod3CA8qTs4hZN2FW7Bp93xXTVFgXiAiP9FUL-gGxwgHAJqTA6DI/exec";
 
-    // Helper: create beautiful select
+    // Toast notification for submit animation
+    function showDoneAnimation(message = "✨ Audit submitted! All records cleared. ✨") {
+        const toast = document.createElement("div");
+        toast.className = "toast-done";
+        toast.innerHTML = `✅ ${message}`;
+        document.body.appendChild(toast);
+        setTimeout(() => {
+            toast.classList.add("exit");
+            setTimeout(() => toast.remove(), 500);
+        }, 2800);
+    }
+
+    // create select field
     function createElegantSelect() {
         const sel = document.createElement("select");
         sel.innerHTML = `<option value="Yes">✅ Yes</option><option value="No">❌ No</option><option value="NA">⚪ N/A</option>`;
@@ -450,7 +486,6 @@
         return sel;
     }
 
-    // update single row score (yes/total)
     function updateSingleRowScore(row) {
         const selects = row.querySelectorAll("select");
         let yes = 0, valid = 0;
@@ -467,12 +502,10 @@
         if (scoreCell) scoreCell.innerText = `${yes}/${valid}`;
     }
 
-    // global refresh: total + column-wise footer
     function refreshAllAggregates() {
         const rows = document.querySelectorAll("#auditTableBody tr");
         let globalYes = 0, globalTotal = 0;
         
-        // first ensure each row score is fresh
         rows.forEach(row => {
             const selects = row.querySelectorAll("select");
             let rowYes = 0, rowValid = 0;
@@ -490,7 +523,6 @@
         });
         document.getElementById("globalScoreDisplay").innerText = `${globalYes}/${globalTotal}`;
         
-        // update column footer (30 columns)
         const footerRow = document.getElementById("columnScoreFooter");
         if (!footerRow) return;
         while (footerRow.cells.length > 1) footerRow.deleteCell(1);
@@ -498,7 +530,6 @@
         for (let colIdx = 0; colIdx < TOTAL_SELECT_COLUMNS; colIdx++) {
             let colYes = 0, colValid = 0;
             rows.forEach(row => {
-                // row structure: cells[0]=SN, [1]=action, [2]=IPD, then 30 selects, then score cell
                 const selectCell = row.cells[colIdx + 3];
                 if (selectCell) {
                     const sel = selectCell.querySelector("select");
@@ -518,25 +549,29 @@
             td.style.fontSize = "0.7rem";
             footerRow.appendChild(td);
         }
-        // extra placeholder for score column alignment
         const spacer = document.createElement("td");
         spacer.innerText = "∑";
         spacer.style.background = "#e4ecf9";
         footerRow.appendChild(spacer);
     }
     
-    // create full new row
+    // clear entire table body
+    function clearAllRecords() {
+        const tbody = document.getElementById("auditTableBody");
+        tbody.innerHTML = "";
+        refreshAllAggregates();
+    }
+
+    // Build fresh row
     function buildNewRow(serial) {
         const tr = document.createElement("tr");
         tr.className = "inactive-row";
         
-        // 1) Serial number
         const tdSn = document.createElement("td");
         tdSn.innerText = serial;
         tdSn.style.fontWeight = "800";
         tr.appendChild(tdSn);
         
-        // 2) Action (delete)
         const tdAction = document.createElement("td");
         const delBtn = document.createElement("button");
         delBtn.innerHTML = "🗑️";
@@ -545,31 +580,35 @@
         tdAction.appendChild(delBtn);
         tr.appendChild(tdAction);
         
-        // 3) IPD input
         const tdIpd = document.createElement("td");
         const ipdInput = document.createElement("input");
         ipdInput.type = "text";
         ipdInput.placeholder = "e.g., IPD-2456";
         ipdInput.style.width = "95px";
         ipdInput.addEventListener("focus", () => highlightRow(tr));
-        ipdInput.addEventListener("input", () => highlightRow(tr));
+        ipdInput.addEventListener("input", () => {
+            highlightRow(tr);
+            removeDuplicateWarning(ipdInput);
+        });
         tdIpd.appendChild(ipdInput);
         tr.appendChild(tdIpd);
         
-        // 4) 30 select fields
         for (let i = 0; i < TOTAL_SELECT_COLUMNS; i++) {
             const tdSel = document.createElement("td");
             tdSel.appendChild(createElegantSelect());
             tr.appendChild(tdSel);
         }
         
-        // 5) Score cell
         const tdScore = document.createElement("td");
         tdScore.className = "score-gem";
         tdScore.innerText = "0/0";
         tr.appendChild(tdScore);
         
         return tr;
+    }
+    
+    function removeDuplicateWarning(inputElem) {
+        inputElem.classList.remove("ipd-duplicate-warning");
     }
     
     function highlightRow(row) {
@@ -609,7 +648,6 @@
         freshRow.scrollIntoView({ behavior: "smooth", block: "nearest" });
     }
     
-    // date formatter: elegant dd-mm-yyyy hh:mm AM/PM
     function formatAuditDateTime(raw) {
         if (!raw) return "";
         const dateObj = new Date(raw);
@@ -624,25 +662,56 @@
         return `${day}-${month}-${year} ${hrs12}:${mins} ${ampm}`;
     }
     
-    // submit payload
+    // Validate duplicate IPD in current table (non-empty IPDs)
+    function hasDuplicateIpdInTable() {
+        const rows = document.querySelectorAll("#auditTableBody tr");
+        const ipdMap = new Map(); // ipdValue -> row element
+        let duplicateFound = false;
+        rows.forEach(row => {
+            const ipdInput = row.cells[2]?.querySelector("input");
+            if (!ipdInput) return;
+            const ipdVal = ipdInput.value.trim();
+            if (ipdVal === "") return;
+            const lowerKey = ipdVal.toLowerCase();
+            if (ipdMap.has(lowerKey)) {
+                duplicateFound = true;
+                // highlight both inputs
+                const existingRow = ipdMap.get(lowerKey);
+                const existingInput = existingRow.cells[2]?.querySelector("input");
+                if (existingInput) existingInput.classList.add("ipd-duplicate-warning");
+                ipdInput.classList.add("ipd-duplicate-warning");
+            } else {
+                ipdMap.set(lowerKey, row);
+            }
+        });
+        return duplicateFound;
+    }
+    
+    // submit logic with duplicate prevention + auto-clear after success + animation
     function submitAuditData() {
+        // First: duplicate IPD validation
+        if (hasDuplicateIpdInTable()) {
+            alert("❌ Duplicate IPD Number found! Please ensure each IPD number is unique before submitting.");
+            return;
+        }
+        
         const dateTimeRaw = document.getElementById("auditDateTime").value;
         const formattedDateTime = formatAuditDateTime(dateTimeRaw);
         const monthVal = document.getElementById("auditMonth").value;
         const rows = document.querySelectorAll("#auditTableBody tr");
         const payload = [];
+        let hasValidRecords = false;
         
         for (let row of rows) {
             const ipdInputField = row.cells[2]?.querySelector("input");
             const ipdValue = ipdInputField ? ipdInputField.value.trim() : "";
             if (ipdValue === "") continue;
-            
+            hasValidRecords = true;
             const record = [];
             record.push(formattedDateTime);
             record.push(monthVal);
             record.push(ipdValue);
             
-            // get all select values (30 columns)
             for (let i = 0; i < TOTAL_SELECT_COLUMNS; i++) {
                 const selectCell = row.cells[i + 3];
                 const selectEl = selectCell ? selectCell.querySelector("select") : null;
@@ -653,11 +722,12 @@
             payload.push(record);
         }
         
-        if (payload.length === 0) {
-            alert("❌ No valid records with IPD number. Please fill IPD field before submit.");
+        if (!hasValidRecords || payload.length === 0) {
+            alert("❌ No valid records with IPD number. Please fill at least one IPD field before submit.");
             return;
         }
         
+        // Perform submission
         fetch(WEBHOOK_URL, {
             method: "POST",
             mode: "no-cors",
@@ -665,15 +735,24 @@
             body: JSON.stringify(payload)
         })
         .then(() => {
-            alert(`✅ Audit submitted! ${payload.length} record(s) synced.\nTimestamp: ${formattedDateTime}`);
+            // Success: clear all records, show done animation, reset global aggregates
+            clearAllRecords();   // removes all rows -> fresh state
+            renumberRows();      // no rows but safe
+            refreshAllAggregates();
+            showDoneAnimation(`✔️ ${payload.length} record(s) synced. All data cleared. + New records ready`);
+            
+            // optional: small visual pulse on submit button
+            const btn = document.getElementById("submitToSheetsBtn");
+            btn.style.transform = "scale(0.98)";
+            setTimeout(() => btn.style.transform = "", 200);
         })
         .catch(err => {
             console.warn(err);
-            alert("⚠️ Request sent, but CORS policy may hide response. Data is likely recorded.");
+            alert("⚠️ Network issue. Data may not have been saved. Please check connection and try again. Records not cleared.");
         });
     }
     
-    // demo initial row with sample data
+    // Seed a demo row for initial load (non-duplicate IPD)
     function seedInitialRow() {
         const tbody = document.getElementById("auditTableBody");
         const demoRow = buildNewRow(1);
