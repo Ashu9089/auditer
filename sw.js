@@ -1,43 +1,5 @@
-const CACHE_NAME = "medaudit-pro-v1";
-const APP_SHELL = [
-  "./",
-  "./medaudit_audit_screen_reports_pwa.html",
-  "./master.html",
-  "./manifest.webmanifest"
-];
-
-self.addEventListener("install", (event) => {
-  self.skipWaiting();
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL).catch(() => null))
-  );
-});
-
-self.addEventListener("activate", (event) => {
-  event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key)))
-    )
-  );
-  self.clients.claim();
-});
-
-self.addEventListener("fetch", (event) => {
-  const req = event.request;
-  const url = new URL(req.url);
-
-  if (url.hostname.includes("supabase.co") || url.hostname.includes("cdn.jsdelivr.net") || url.hostname.includes("cdnjs.cloudflare.com")) {
-    event.respondWith(fetch(req).catch(() => caches.match(req)));
-    return;
-  }
-
-  event.respondWith(
-    caches.match(req).then((cached) => {
-      return cached || fetch(req).then((res) => {
-        const copy = res.clone();
-        caches.open(CACHE_NAME).then((cache) => cache.put(req, copy)).catch(() => null);
-        return res;
-      }).catch(() => caches.match("./medaudit_audit_screen_reports_pwa.html"));
-    })
-  );
-});
+const CACHE_NAME="medaudit-pro-v2";
+const APP_SHELL=["./","./medaudit_face_sheet_ocr_doctor_wide_camera.html","./master.html","./manifest.webmanifest"];
+self.addEventListener("install",e=>{self.skipWaiting();e.waitUntil(caches.open(CACHE_NAME).then(c=>c.addAll(APP_SHELL).catch(()=>null)))});
+self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE_NAME).map(k=>caches.delete(k)))));self.clients.claim()});
+self.addEventListener("fetch",e=>{const u=new URL(e.request.url);if(u.hostname.includes("supabase.co")||u.hostname.includes("cdn.jsdelivr.net")||u.hostname.includes("cdnjs.cloudflare.com")){e.respondWith(fetch(e.request).catch(()=>caches.match(e.request)));return}e.respondWith(caches.match(e.request).then(c=>c||fetch(e.request).then(r=>{const cp=r.clone();caches.open(CACHE_NAME).then(cache=>cache.put(e.request,cp)).catch(()=>null);return r}).catch(()=>caches.match("./medaudit_face_sheet_ocr_doctor_wide_camera.html"))))});
