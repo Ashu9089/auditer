@@ -1,939 +1,613 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Auditer Master | MRD Clinical Suite | Duplicate Guard</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Inter', system-ui, -apple-system, sans-serif;
-            background: radial-gradient(ellipse at 20% 30%, #f0f5fe 0%, #e2ecf9 100%);
-            padding: 2rem 1.8rem;
-            min-height: 100vh;
-            position: relative;
-        }
-
-        body::before {
-            content: '';
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='1' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
-            pointer-events: none;
-            z-index: 0;
-        }
-
-        .luxe-container {
-            max-width: 100%;
-            background: rgba(255, 255, 255, 0.96);
-            backdrop-filter: blur(2px);
-            border-radius: 2rem;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.5) inset, 0 0 0 1px rgba(0, 0, 0, 0.05);
-            padding: 1.8rem 1.8rem 2rem 1.8rem;
-            transition: all 0.3s;
-            position: relative;
-            z-index: 2;
-        }
-
-        .hero-section {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-end;
-            flex-wrap: wrap;
-            margin-bottom: 2rem;
-            padding-bottom: 1rem;
-            border-bottom: 2px solid;
-            border-image: linear-gradient(90deg, #3b82f6, #a855f7, #3b82f6) 1;
-            border-bottom-style: solid;
-            border-bottom-width: 2px;
-        }
-        .title-block h1 {
-            font-size: 1.9rem;
-            font-weight: 800;
-            background: linear-gradient(135deg, #1e3a8a, #3b82f6, #7c3aed);
-            background-clip: text;
-            -webkit-background-clip: text;
-            color: transparent;
-            letter-spacing: -0.02em;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-        .title-block h1 span {
-            background: linear-gradient(145deg, #2563eb, #4f46e5);
-            font-size: 0.7rem;
-            padding: 0.2rem 0.9rem;
-            border-radius: 40px;
-            color: white;
-            background-clip: unset;
-            font-weight: 600;
-        }
-        .pill-badge {
-            background: rgba(59,130,246,0.12);
-            backdrop-filter: blur(4px);
-            padding: 0.4rem 1.2rem;
-            border-radius: 60px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            color: #1e40af;
-            border: 1px solid rgba(59,130,246,0.3);
-        }
-
-        .control-panel {
-            display: flex;
-            gap: 1.2rem;
-            flex-wrap: wrap;
-            margin-bottom: 2rem;
-            background: rgba(255,255,240,0.5);
-            padding: 1rem 1.6rem;
-            border-radius: 2rem;
-            align-items: center;
-            justify-content: space-between;
-            backdrop-filter: blur(4px);
-            border: 1px solid rgba(59,130,246,0.2);
-        }
-        .date-group {
-            display: flex;
-            gap: 1rem;
-            flex-wrap: wrap;
-        }
-        .date-group input {
-            background: white;
-            border: 1px solid #e2e8f0;
-            padding: 0.7rem 1.2rem;
-            border-radius: 2rem;
-            font-size: 0.85rem;
-            font-weight: 500;
-            font-family: 'Inter', monospace;
-            transition: all 0.2s;
-        }
-        .date-group input:focus {
-            outline: none;
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 3px rgba(59,130,246,0.2);
-        }
-        .btn-group {
-            display: flex;
-            gap: 1rem;
-            align-items: center;
-        }
-        .btn {
-            font-weight: 700;
-            padding: 0.7rem 1.6rem;
-            border-radius: 2.5rem;
-            border: none;
-            cursor: pointer;
-            font-size: 0.85rem;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            transition: all 0.25s cubic-bezier(0.2, 0.9, 0.4, 1.1);
-            background: white;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
-        }
-        .btn-primary {
-            background: linear-gradient(105deg, #2563eb, #4f46e5);
-            color: white;
-            border: none;
-            box-shadow: 0 4px 12px rgba(37,99,235,0.25);
-        }
-        .btn-primary:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 12px 20px -12px rgba(37,99,235,0.45);
-            background: linear-gradient(105deg, #3b82f6, #6366f1);
-        }
-        .btn-success {
-            background: linear-gradient(105deg, #059669, #10b981);
-            color: white;
-            box-shadow: 0 4px 12px rgba(5,150,105,0.25);
-        }
-        .btn-outline {
-            background: transparent;
-            border: 1px solid #3b82f6;
-            color: #1e40af;
-        }
-        .btn-outline:hover {
-            background: #eef2ff;
-        }
-        .btn:disabled {
-            opacity: 0.65;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .table-vault {
-            overflow-x: auto;
-            border-radius: 1.5rem;
-            margin: 1rem 0 1rem 0;
-            background: #ffffff;
-            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
-            border: 1px solid #eef2ff;
-        }
-        table {
-            border-collapse: separate;
-            border-spacing: 0;
-            width: 100%;
-            min-width: 3600px;
-            font-size: 0.72rem;
-            font-weight: 500;
-            background: #ffffff;
-        }
-        th {
-            background: linear-gradient(110deg, #0f2b3d 0%, #1a3f57 100%);
-            color: #f1f9ff;
-            padding: 14px 6px;
-            font-weight: 700;
-            font-size: 0.7rem;
-            letter-spacing: 0.03em;
-            text-transform: uppercase;
-            border-bottom: 2px solid #2d6a8f;
-            border-right: 1px solid #2a5e7e;
-        }
-        td {
-            border: 1px solid #eef2fa;
-            padding: 10px 5px;
-            text-align: center;
-            transition: all 0.12s;
-            position: relative;
-        }
-        .sub-header th {
-            background: linear-gradient(110deg, #22668d, #2c7aa3);
-            font-weight: 600;
-            font-size: 0.65rem;
-            text-transform: none;
-        }
-        .active-row td {
-            background: linear-gradient(110deg, #fff9e8, #fff5e0) !important;
-            box-shadow: inset 0 0 0 1px #fbbf24;
-        }
-        .inactive-row td {
-            background: #ffffff;
-        }
-        .no {
-            background: #ffefed !important;
-            border-left: 3px solid #ef4444;
-            font-weight: 600;
-        }
-        select {
-            width: 100%;
-            padding: 6px 4px;
-            border-radius: 40px;
-            border: 1px solid #e0e7ff;
-            background: #fefefe;
-            font-weight: 500;
-            font-size: 0.68rem;
-            font-family: 'Inter', monospace;
-            cursor: pointer;
-            transition: all 0.15s;
-            text-align: center;
-        }
-        select:hover {
-            border-color: #3b82f6;
-            background: #fafcff;
-        }
-        input[type="text"] {
-            font-family: 'Inter', monospace;
-            width: 100%;
-            padding: 6px 6px;
-            border-radius: 40px;
-            border: 1px solid #e2e8f0;
-            background: white;
-            font-size: 0.7rem;
-            font-weight: 500;
-            text-align: center;
-            transition: 0.15s;
-        }
-        input:focus {
-            outline: none;
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 3px rgba(59,130,246,0.15);
-        }
-        .score-gem {
-            background: linear-gradient(145deg, #eef2ff, #e6edfc);
-            font-weight: 800;
-            font-size: 0.8rem;
-            color: #1e3a8a;
-            font-family: 'Inter', monospace;
-        }
-        tfoot td {
-            background: linear-gradient(95deg, #f1f6fe, #eef3fc);
-            font-weight: 800;
-            color: #155e7e;
-            border-top: 2px solid #cbdff2;
-            padding: 10px 5px;
-            font-size: 0.7rem;
-        }
-        .score-summary {
-            margin-top: 1.8rem;
-            background: linear-gradient(115deg, #ffffff, #fafdff);
-            border-radius: 2rem;
-            padding: 1rem 2rem;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            flex-wrap: wrap;
-            gap: 1rem;
-            border: 1px solid rgba(59,130,246,0.3);
-            backdrop-filter: blur(8px);
-            box-shadow: 0 8px 20px -8px rgba(0, 0, 0, 0.08);
-        }
-        .total-ring {
-            background: linear-gradient(135deg, #1e293b, #0f172a);
-            padding: 0.5rem 1.6rem;
-            border-radius: 3rem;
-            color: white;
-            font-weight: 800;
-            font-size: 1.2rem;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-        }
-        .total-ring span {
-            background: #facc15;
-            color: #0f172a;
-            padding: 0.2rem 0.9rem;
-            border-radius: 3rem;
-            font-size: 1.2rem;
-            margin-left: 6px;
-        }
-        .delete-icon {
-            background: transparent;
-            border: none;
-            font-size: 1.2rem;
-            cursor: pointer;
-            padding: 5px 8px;
-            border-radius: 50px;
-            transition: all 0.2s;
-            font-weight: 600;
-            color: #ef4444;
-        }
-        .delete-icon:hover {
-            background: #fee2e2;
-            transform: scale(1.08);
-        }
-        .legend-note {
-            font-size: 0.7rem;
-            color: #5b6e8c;
-            margin-top: 1rem;
-            text-align: right;
-            display: flex;
-            justify-content: flex-end;
-            gap: 1.2rem;
-        }
-        @keyframes fadeSlide {
-            0% { opacity: 0; transform: translateY(8px); }
-            100% { opacity: 1; transform: translateY(0); }
-        }
-        .row-animate {
-            animation: fadeSlide 0.2s ease-out;
-        }
-        .toast-done {
-            position: fixed;
-            bottom: 30px;
-            right: 30px;
-            background: linear-gradient(125deg, #10b981, #059669);
-            color: white;
-            padding: 14px 28px;
-            border-radius: 60px;
-            font-weight: 700;
-            font-size: 0.9rem;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            z-index: 2000;
-            box-shadow: 0 20px 35px -12px rgba(0,0,0,0.3);
-            backdrop-filter: blur(8px);
-            font-family: 'Inter', monospace;
-            animation: slideUpFade 0.35s cubic-bezier(0.2, 0.9, 0.4, 1.1) forwards;
-            pointer-events: none;
-            letter-spacing: 0.3px;
-        }
-        @keyframes slideUpFade {
-            0% { opacity: 0; transform: translateY(40px) scale(0.9); }
-            100% { opacity: 1; transform: translateY(0) scale(1); }
-        }
-        .toast-done.exit {
-            animation: fadeOutDown 0.4s ease forwards;
-        }
-        @keyframes fadeOutDown {
-            to { opacity: 0; transform: translateY(30px); visibility: hidden; }
-        }
-        .ipd-duplicate-warning {
-            border: 2px solid #ef4444 !important;
-            background-color: #fff0f0 !important;
-            box-shadow: 0 0 0 2px rgba(239,68,68,0.2);
-        }
-        .warning-tooltip {
-            position: absolute;
-            background: #ef4444;
-            color: white;
-            font-size: 0.65rem;
-            padding: 2px 8px;
-            border-radius: 50px;
-            white-space: nowrap;
-            top: -20px;
-            left: 50%;
-            transform: translateX(-50%);
-            pointer-events: none;
-            z-index: 10;
-            font-weight: 600;
-        }
-        .btn-loading {
-            position: relative;
-            pointer-events: none;
-        }
-        .sync-badge {
-            font-size: 0.7rem;
-            background: #e6f7ec;
-            padding: 4px 12px;
-            border-radius: 30px;
-            color: #166534;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>MedAudit Report Screen - Original Parameters</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
+  <style>
+    *{box-sizing:border-box;font-family:Arial,Helvetica,sans-serif}
+    body{margin:0;background:#eef2f7;color:#111;padding:18px}
+    .wrap{max-width:1250px;margin:auto}
+    .card{background:#fff;border:1px solid #d7dee8;border-radius:18px;padding:18px;margin-bottom:14px;box-shadow:0 4px 14px rgba(0,0,0,.05)}
+    h1{margin:0 0 4px;font-size:24px}
+    .sub{font-size:13px;color:#475569}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-top:14px}
+    label{font-weight:700;font-size:13px;color:#0b3b5f}
+    input,select{width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:10px}
+    button{border:0;border-radius:999px;padding:11px 16px;font-weight:700;cursor:pointer;background:#0b3b5f;color:#fff;margin:5px}
+    button.green{background:#1f6d49} button.red{background:#9e2d2d} button.dark{background:#111827}
+    table{width:100%;border-collapse:collapse;background:#fff}
+    th,td{border:1px solid #d6dee8;padding:8px;text-align:center;font-size:13px}
+    th{background:#0b3b5f;color:#fff}
+    .left{text-align:left}
+    .kpi{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px}
+    .kpi div{background:#f8fafc;border:1px solid #dbe4ef;border-radius:14px;padding:12px;font-weight:700}
+    .note{font-size:12px;color:#64748b;margin-top:8px}
+  </style>
 </head>
 <body>
+<div class="wrap">
+  <div class="card">
+    <h1>ARC+ SUPER SPECIALTY HOSPITAL</h1>
+    <div class="sub">MedAudit Report Screen - Original Audit Parameters</div>
+    <div class="grid">
+      <div><label>From Date</label><input type="date" id="fromDate"></div>
+      <div><label>To Date</label><input type="date" id="toDate"></div>
+      <div><label>Report Type</label><select id="reportType"><option value="daily">Daily</option><option value="monthly">Monthly</option></select></div>
+      <div><label>Download Password</label><input type="password" id="downloadPassword" placeholder="Password"></div>
+    </div>
+    <div style="margin-top:14px">
+      <button onclick="loadReport()">Show Data</button>
+      <button class="green" onclick="downloadExcel()">Download Excel</button>
+      <button class="dark" onclick="downloadMonthlyPdf()">Monthly PDF Sheet</button>
+      <button class="red" onclick="downloadFinalPdf()">Final PDF Summary</button>
+      <button onclick="downloadDetailPdf()">Detail PDF (4 file/page)</button>
+    </div>
+    <div class="note">Password for download: Ashish@1218. Monthly PDF ab 25-25 parameters per page me split hai, cut nahi hoga.</div>
+  </div>
 
-<div class="luxe-container">
-    <div class="hero-section">
-        <div class="title-block">
-            <h1>
-                ✦ Auditer Master
-                <span>MRD v3</span>
-            </h1>
-            <div style="font-size: 0.7rem; color: #4b6b8f; margin-top: 6px;">precision · compliance · intelligence</div>
-        </div>
-        <div class="pill-badge">
-            🧬 Joint Commission Ready
-        </div>
-    </div>
-
-    <div class="control-panel">
-        <div class="date-group">
-            <input type="datetime-local" id="auditDateTime" title="Audit Timestamp">
-            <input type="month" id="auditMonth" title="Review Month">
-        </div>
-        <div class="btn-group">
-            <button class="btn btn-outline" id="syncRemoteBtn">🔄 Sync Existing IPDs</button>
-            <button class="btn btn-primary" id="addNewRecordBtn">✦ New Record</button>
-            <button class="btn btn-success" id="submitToSheetsBtn">📤 Submit Audit</button>
-        </div>
-    </div>
-
-    <div class="table-vault">
-        <table id="masterAuditTable">
-            <thead>
-                <tr>
-                    <th rowspan="2">#ID</th>
-                    <th rowspan="2">⌫</th>
-                    <th rowspan="2">🏥 IPD Number</th>
-                    <th rowspan="2">🩺 Provisional Dx</th>
-                    <th rowspan="2">💊 Treatment</th>
-                    <th rowspan="2">📋 Plan of Care</th>
-                    <th rowspan="2">👨‍⚕️ Consultant Visit</th>
-                    <th rowspan="2">🔄 Reassessment</th>
-                    <th colspan="2">🧑‍⚕️ Nursing</th>
-                    <th rowspan="2">🔪 Procedure</th>
-                    <th rowspan="2">📈 Monitoring During</th>
-                    <th rowspan="2">📉 Monitoring After</th>
-                    <th rowspan="2">✅ Safety Checklist</th>
-                    <th rowspan="2">💉 Pre-Anesthesia</th>
-                    <th rowspan="2">🏥 Pre-Op</th>
-                    <th rowspan="2">⚙️ Operative</th>
-                    <th rowspan="2">🩹 Post-Op</th>
-                    <th rowspan="2">😴 Anesthesia</th>
-                    <th rowspan="2">📝 Doctor Note</th>
-                    <th rowspan="2">⚠️ Safety</th>
-                    <th rowspan="2">🩸 BT</th>
-                    <th rowspan="2">🥗 Diet</th>
-                    <th rowspan="2">📊 Treatment Chart</th>
-                    <th rowspan="2">↪️ Referral</th>
-                    <th rowspan="2">🚑 Transfer</th>
-                    <th colspan="2">🏁 Discharge</th>
-                    <th colspan="5">⚰️ Death Documentation</th>
-                    <th rowspan="2">🏆 Score</th>
-                </tr>
-                <tr class="sub-header">
-                    <th>+ve</th><th>Sign</th>
-                    <th>Yes/No</th><th>Yes/No</th>
-                    <th>Physician</th><th>Info</th><th>Summary</th><th>Cause</th><th>Form 4</th>
-                </tr>
-            </thead>
-            <tbody id="auditTableBody"></tbody>
-            <tfoot>
-                <tr id="columnScoreFooter">
-                    <td colspan="3">📊 Column Score Summary</td>
-                </tr>
-            </tfoot>
-        </table>
-    </div>
-
-    <div class="score-summary">
-        <div style="display: flex; align-items: center; gap: 12px;">
-            <span style="font-weight: 800; background: #eef3ff; padding: 5px 15px; border-radius: 40px;">📈 TOTAL COMPLIANCE</span>
-            <span id="duplicateIndicator" class="sync-badge" style="background:#fee2e2; color:#b91c1c; display:none;">⚠️ Duplicate IPD detected</span>
-        </div>
-        <div class="total-ring">
-            SCORE <span id="globalScoreDisplay">0/0</span>
-        </div>
-    </div>
-    <div class="legend-note">
-        <span>✅ Yes = compliant</span>
-        <span>❌ No = alert highlight</span>
-        <span>⚪ N/A = excluded</span>
-        <span>🔴 Red IPD = Already exists in Sheet (cannot submit)</span>
-    </div>
+  <div class="card kpi" id="kpiBox"></div>
+  <div class="card">
+    <h3>Parameter Summary</h3>
+    <div style="overflow:auto"><table id="summaryTable"></table></div>
+  </div>
+  <div class="card">
+    <h3>Audit Records</h3>
+    <div style="overflow:auto"><table id="auditTable"></table></div>
+  </div>
 </div>
 
 <script>
-    const TOTAL_SELECT_COLUMNS = 30;
-    const WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbxgWj_Wxk_zKuYdbod3CA8qTs4hZN2FW7Bp93xXTVFgXiAiP9FUL-gGxwgHAJqTA6DI/exec";
-    
-    let isSubmitting = false;
-    let existingIPDsSet = new Set();      // Store all already-submitted IPDs (from localStorage + remote)
-    
-    // ---------- Load/Save local cache ----------
-    function loadExistingIPDsFromLocalStorage() {
-        const stored = localStorage.getItem("audit_submitted_ipds");
-        if (stored) {
-            try {
-                const arr = JSON.parse(stored);
-                existingIPDsSet.clear();
-                arr.forEach(ipd => existingIPDsSet.add(ipd.toLowerCase().trim()));
-            } catch(e) {}
-        }
-    }
-    
-    function saveExistingIPDsToLocalStorage() {
-        const arr = Array.from(existingIPDsSet);
-        localStorage.setItem("audit_submitted_ipds", JSON.stringify(arr));
-    }
-    
-    // Add IPDs after successful submit
-    function addIPDsToCache(ipdList) {
-        ipdList.forEach(ipd => {
-            if (ipd && ipd.trim()) existingIPDsSet.add(ipd.trim().toLowerCase());
-        });
-        saveExistingIPDsToLocalStorage();
-    }
-    
-    // Attempt to fetch existing IPDs from Google Sheet (if GET endpoint is configured)
-    async function fetchExistingIPDsFromSheet() {
-        // Try to get data from the webhook using GET? We'll append ?action=getAll
-        // If the Apps Script supports doGet, we can retrieve. Otherwise fallback to cache.
-        try {
-            const response = await fetch(`${WEBHOOK_URL}?action=getAll`, { method: "GET", mode: "cors" });
-            if (response.ok) {
-                const data = await response.json();
-                if (data && Array.isArray(data)) {
-                    const ipds = data.map(row => row[2] ? String(row[2]).trim().toLowerCase() : null).filter(v => v);
-                    ipds.forEach(ipd => existingIPDsSet.add(ipd));
-                    saveExistingIPDsToLocalStorage();
-                    showToast(`Synced ${ipds.length} existing IPDs from sheet.`, "#3b82f6");
-                    return true;
-                }
-            }
-        } catch (err) {
-            console.warn("Remote fetch failed, using localStorage cache only.", err);
-        }
-        return false;
-    }
-    
-    async function syncRemoteIPDs() {
-        const btn = document.getElementById("syncRemoteBtn");
-        const originalText = btn.innerHTML;
-        btn.innerHTML = "⏳ Syncing...";
-        btn.disabled = true;
-        await fetchExistingIPDsFromSheet();
-        // Re-validate all current rows after sync
-        validateAllIPDsInTable();
-        refreshAllAggregates();
-        btn.innerHTML = originalText;
-        btn.disabled = false;
-        showToast("IPD cache updated from sheet", "#10b981");
-    }
-    
-    function showToast(msg, bgColor = "#10b981") {
-        const toast = document.createElement("div");
-        toast.className = "toast-done";
-        toast.style.background = `linear-gradient(125deg, ${bgColor}, ${bgColor}dd)`;
-        toast.innerHTML = `✅ ${msg}`;
-        document.body.appendChild(toast);
-        setTimeout(() => {
-            toast.classList.add("exit");
-            setTimeout(() => toast.remove(), 500);
-        }, 2500);
-    }
-    
-    // Validate a single IPD input against existingIPDsSet + current table duplicates
-    function validateSingleIPD(ipdInput, row) {
-        const ipdVal = ipdInput.value.trim();
-        if (!ipdVal) {
-            ipdInput.classList.remove("ipd-duplicate-warning");
-            removeWarningTooltip(ipdInput);
-            return true;
-        }
-        const lowerIpd = ipdVal.toLowerCase();
-        let isDuplicateExternal = existingIPDsSet.has(lowerIpd);
-        
-        // Also check duplicate within current table (excluding self)
-        const rows = document.querySelectorAll("#auditTableBody tr");
-        let internalDuplicate = false;
-        for (let r of rows) {
-            if (r === row) continue;
-            const otherInput = r.cells[2]?.querySelector("input");
-            if (otherInput && otherInput.value.trim().toLowerCase() === lowerIpd) {
-                internalDuplicate = true;
-                break;
-            }
-        }
-        
-        const isDuplicate = isDuplicateExternal || internalDuplicate;
-        if (isDuplicate) {
-            ipdInput.classList.add("ipd-duplicate-warning");
-            addWarningTooltip(ipdInput, isDuplicateExternal ? "⚠️ IPD already exists in Google Sheet" : "⚠️ Duplicate IPD in current table");
-        } else {
-            ipdInput.classList.remove("ipd-duplicate-warning");
-            removeWarningTooltip(ipdInput);
-        }
-        return !isDuplicate;
-    }
-    
-    function addWarningTooltip(inputElem, message) {
-        removeWarningTooltip(inputElem);
-        const tooltip = document.createElement("div");
-        tooltip.className = "warning-tooltip";
-        tooltip.innerText = message;
-        inputElem.parentElement.style.position = "relative";
-        inputElem.parentElement.appendChild(tooltip);
-        inputElem._tooltip = tooltip;
-    }
-    
-    function removeWarningTooltip(inputElem) {
-        if (inputElem._tooltip) {
-            inputElem._tooltip.remove();
-            delete inputElem._tooltip;
-        }
-        if (inputElem.parentElement) {
-            const existing = inputElem.parentElement.querySelector(".warning-tooltip");
-            if (existing) existing.remove();
-        }
-    }
-    
-    function validateAllIPDsInTable() {
-        const rows = document.querySelectorAll("#auditTableBody tr");
-        let anyDuplicate = false;
-        rows.forEach(row => {
-            const ipdInput = row.cells[2]?.querySelector("input");
-            if (ipdInput) {
-                const valid = validateSingleIPD(ipdInput, row);
-                if (!valid) anyDuplicate = true;
-            }
-        });
-        const indicator = document.getElementById("duplicateIndicator");
-        if (anyDuplicate) {
-            indicator.style.display = "inline-block";
-        } else {
-            indicator.style.display = "none";
-        }
-        return !anyDuplicate;
-    }
-    
-    // --- Table row management ---
-    function createElegantSelect() {
-        const sel = document.createElement("select");
-        sel.innerHTML = `<option value="Yes">✅ Yes</option><option value="No">❌ No</option><option value="NA">⚪ N/A</option>`;
-        sel.addEventListener("change", function() {
-            const row = this.closest("tr");
-            if (row) updateSingleRowScore(row);
-            refreshAllAggregates();
-        });
-        return sel;
-    }
-    
-    function updateSingleRowScore(row) {
-        const selects = row.querySelectorAll("select");
-        let yes = 0, valid = 0;
-        selects.forEach(sel => {
-            sel.classList.remove("no");
-            const val = sel.value;
-            if (val !== "NA") {
-                valid++;
-                if (val === "Yes") yes++;
-                if (val === "No") sel.classList.add("no");
-            }
-        });
-        const scoreCell = row.querySelector(".score-gem");
-        if (scoreCell) scoreCell.innerText = `${yes}/${valid}`;
-    }
-    
-    function refreshAllAggregates() {
-        const rows = document.querySelectorAll("#auditTableBody tr");
-        let globalYes = 0, globalTotal = 0;
-        rows.forEach(row => {
-            const selects = row.querySelectorAll("select");
-            let rowYes = 0, rowValid = 0;
-            selects.forEach(sel => {
-                const val = sel.value;
-                if (val !== "NA") {
-                    rowValid++;
-                    if (val === "Yes") rowYes++;
-                }
-            });
-            const scoreSpan = row.querySelector(".score-gem");
-            if (scoreSpan) scoreSpan.innerText = `${rowYes}/${rowValid}`;
-            globalYes += rowYes;
-            globalTotal += rowValid;
-        });
-        document.getElementById("globalScoreDisplay").innerText = `${globalYes}/${globalTotal}`;
-        
-        const footerRow = document.getElementById("columnScoreFooter");
-        if (!footerRow) return;
-        while (footerRow.cells.length > 1) footerRow.deleteCell(1);
-        for (let colIdx = 0; colIdx < TOTAL_SELECT_COLUMNS; colIdx++) {
-            let colYes = 0, colValid = 0;
-            rows.forEach(row => {
-                const selectCell = row.cells[colIdx + 3];
-                if (selectCell) {
-                    const sel = selectCell.querySelector("select");
-                    if (sel) {
-                        const val = sel.value;
-                        if (val !== "NA") {
-                            colValid++;
-                            if (val === "Yes") colYes++;
-                        }
-                    }
-                }
-            });
-            const td = document.createElement("td");
-            td.innerText = `${colYes}/${colValid}`;
-            td.style.fontWeight = "800";
-            td.style.backgroundColor = "#eef2ff";
-            td.style.fontSize = "0.7rem";
-            footerRow.appendChild(td);
-        }
-        const spacer = document.createElement("td");
-        spacer.innerText = "∑";
-        spacer.style.background = "#e4ecf9";
-        footerRow.appendChild(spacer);
-    }
-    
-    function clearAllRecords() {
-        const tbody = document.getElementById("auditTableBody");
-        tbody.innerHTML = "";
-        refreshAllAggregates();
-    }
-    
-    function buildNewRow(serial) {
-        const tr = document.createElement("tr");
-        tr.className = "inactive-row";
-        const tdSn = document.createElement("td");
-        tdSn.innerText = serial;
-        tdSn.style.fontWeight = "800";
-        tr.appendChild(tdSn);
-        const tdAction = document.createElement("td");
-        const delBtn = document.createElement("button");
-        delBtn.innerHTML = "🗑️";
-        delBtn.className = "delete-icon";
-        delBtn.onclick = function(e) { deleteRecord(this); };
-        tdAction.appendChild(delBtn);
-        tr.appendChild(tdAction);
-        const tdIpd = document.createElement("td");
-        const ipdInput = document.createElement("input");
-        ipdInput.type = "text";
-        ipdInput.placeholder = "e.g., IPD-2456";
-        ipdInput.style.width = "95px";
-        ipdInput.addEventListener("focus", () => highlightRow(tr));
-        ipdInput.addEventListener("blur", () => {
-            validateSingleIPD(ipdInput, tr);
-            validateAllIPDsInTable();
-        });
-        ipdInput.addEventListener("input", () => {
-            highlightRow(tr);
-            ipdInput.classList.remove("ipd-duplicate-warning");
-            removeWarningTooltip(ipdInput);
-        });
-        tdIpd.appendChild(ipdInput);
-        tr.appendChild(tdIpd);
-        for (let i = 0; i < TOTAL_SELECT_COLUMNS; i++) {
-            const tdSel = document.createElement("td");
-            tdSel.appendChild(createElegantSelect());
-            tr.appendChild(tdSel);
-        }
-        const tdScore = document.createElement("td");
-        tdScore.className = "score-gem";
-        tdScore.innerText = "0/0";
-        tr.appendChild(tdScore);
-        return tr;
-    }
-    
-    function highlightRow(row) {
-        document.querySelectorAll("#auditTableBody tr").forEach(r => {
-            r.classList.remove("active-row");
-            r.classList.add("inactive-row");
-        });
-        row.classList.remove("inactive-row");
-        row.classList.add("active-row");
-    }
-    
-    function deleteRecord(btnElement) {
-        const row = btnElement.closest("tr");
-        if (row && confirm("Remove this patient record?")) {
-            row.remove();
-            renumberRows();
-            refreshAllAggregates();
-            validateAllIPDsInTable();
-        }
-    }
-    
-    function renumberRows() {
-        const rows = document.querySelectorAll("#auditTableBody tr");
-        rows.forEach((row, idx) => { row.cells[0].innerText = idx + 1; });
-    }
-    
-    function addRecord() {
-        const tbody = document.getElementById("auditTableBody");
-        const newSn = tbody.rows.length + 1;
-        const freshRow = buildNewRow(newSn);
-        tbody.appendChild(freshRow);
-        renumberRows();
-        refreshAllAggregates();
-        freshRow.classList.add("row-animate");
-        setTimeout(() => freshRow.classList.remove("row-animate"), 300);
-    }
-    
-    function formatAuditDateTime(raw) {
-        if (!raw) return "";
-        const dateObj = new Date(raw);
-        if (isNaN(dateObj.getTime())) return raw;
-        const day = String(dateObj.getDate()).padStart(2,'0');
-        const month = String(dateObj.getMonth()+1).padStart(2,'0');
-        const year = dateObj.getFullYear();
-        let hrs24 = dateObj.getHours();
-        const mins = String(dateObj.getMinutes()).padStart(2,'0');
-        const ampm = hrs24 >= 12 ? 'PM' : 'AM';
-        const hrs12 = hrs24 % 12 || 12;
-        return `${day}-${month}-${year} ${hrs12}:${mins} ${ampm}`;
-    }
-    
-    // Final submit with duplicate guard (remote cache)
-    async function submitAuditData() {
-        if (isSubmitting) return;
-        // Revalidate all IPDs against cache
-        const isValid = validateAllIPDsInTable();
-        if (!isValid) {
-            alert("❌ One or more IPD numbers already exist in Google Sheet (or duplicate within table). Please remove or modify duplicates before submitting.");
-            return;
-        }
-        const dateTimeRaw = document.getElementById("auditDateTime").value;
-        const formattedDateTime = formatAuditDateTime(dateTimeRaw);
-        const monthVal = document.getElementById("auditMonth").value;
-        const rows = document.querySelectorAll("#auditTableBody tr");
-        const payload = [];
-        let hasValidRecords = false;
-        const ipdsToAdd = [];
-        
-        for (let row of rows) {
-            const ipdInput = row.cells[2]?.querySelector("input");
-            const ipdValue = ipdInput ? ipdInput.value.trim() : "";
-            if (ipdValue === "") continue;
-            hasValidRecords = true;
-            ipdsToAdd.push(ipdValue);
-            const record = [];
-            record.push(formattedDateTime, monthVal, ipdValue);
-            for (let i = 0; i < TOTAL_SELECT_COLUMNS; i++) {
-                const selectCell = row.cells[i + 3];
-                const selectEl = selectCell ? selectCell.querySelector("select") : null;
-                record.push(selectEl ? selectEl.value : "NA");
-            }
-            const scoreText = row.querySelector(".score-gem")?.innerText || "0/0";
-            record.push(scoreText);
-            payload.push(record);
-        }
-        
-        if (!hasValidRecords || payload.length === 0) {
-            alert("❌ No valid IPD records to submit.");
-            return;
-        }
-        
-        isSubmitting = true;
-        const submitBtn = document.getElementById("submitToSheetsBtn");
-        const originalText = submitBtn.innerHTML;
-        submitBtn.disabled = true;
-        submitBtn.innerHTML = "⏳ Submitting...";
-        
-        try {
-            await fetch(WEBHOOK_URL, {
-                method: "POST",
-                mode: "no-cors",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload)
-            });
-            // Update cache with newly submitted IPDs
-            addIPDsToCache(ipdsToAdd);
-            clearAllRecords();
-            renumberRows();
-            refreshAllAggregates();
-            validateAllIPDsInTable();
-            showToast(`✔️ ${payload.length} record(s) synced. Duplicates now blocked.`, "#10b981");
-        } catch (err) {
-            console.error(err);
-            alert("Network error. Data not saved.");
-        } finally {
-            setTimeout(() => {
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = originalText;
-                isSubmitting = false;
-            }, 700);
-        }
-    }
-    
-    function seedInitialRow() {
-        const tbody = document.getElementById("auditTableBody");
-        const demoRow = buildNewRow(1);
-        const ipdField = demoRow.cells[2].querySelector("input");
-        if (ipdField) ipdField.value = "IPD-24087";
-        const allSelects = demoRow.querySelectorAll("select");
-        if (allSelects.length) {
-            allSelects[0].value = "Yes";
-            allSelects[1].value = "Yes";
-            allSelects[2].value = "Yes";
-            allSelects[3].value = "Yes";
-            allSelects[5].value = "Yes";
-            allSelects[7].value = "Yes";
-            allSelects[9].value = "Yes";
-            allSelects[12].value = "Yes";
-        }
-        tbody.appendChild(demoRow);
-        updateSingleRowScore(demoRow);
-        setTimeout(() => validateAllIPDsInTable(), 50);
-    }
-    
-    window.onload = async () => {
-        const now = new Date();
-        const localIso = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0,16);
-        document.getElementById("auditDateTime").value = localIso;
-        document.getElementById("auditMonth").value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-        
-        loadExistingIPDsFromLocalStorage();
-        // optional: try to sync remotely (non-blocking)
-        fetchExistingIPDsFromSheet().catch(e=>console.warn);
-        
-        seedInitialRow();
-        refreshAllAggregates();
-        document.getElementById("addNewRecordBtn").addEventListener("click", addRecord);
-        document.getElementById("submitToSheetsBtn").addEventListener("click", submitAuditData);
-        document.getElementById("syncRemoteBtn").addEventListener("click", syncRemoteIPDs);
+const SUPABASE_URL = "https://ogokeoektghcdfhtdimj.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9nb2tlb2VrdGdoY2RmaHRkaW1qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE1MDkzNTAsImV4cCI6MjA5NzA4NTM1MH0.25jsxi7Bc1usY8yhieGIRDyMYBtsSDffow03Z0FcSQ4";
+const DOWNLOAD_PASSWORD = "Ashish@1218";
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+const baseItems = [
+{id:"01",section:"A. PATIENT IDENTIFICATION",text:"Patient Name on all sheets"},
+{id:"02",section:"A. PATIENT IDENTIFICATION",text:"UHID on all sheets"},
+{id:"03",section:"A. PATIENT IDENTIFICATION",text:"IP Number on all sheets"},
+{id:"04",section:"A. PATIENT IDENTIFICATION",text:"Age mentioned"},
+{id:"05",section:"A. PATIENT IDENTIFICATION",text:"Gender mentioned"},
+{id:"06",section:"A. PATIENT IDENTIFICATION",text:"Ward mentioned"},
+{id:"07",section:"A. PATIENT IDENTIFICATION",text:"Bed Number mentioned"},
+{id:"08",section:"A. PATIENT IDENTIFICATION",text:"Admission Date mentioned"},
+{id:"09",section:"A. PATIENT IDENTIFICATION",text:"Admission Time mentioned"},
+{id:"10",section:"A. PATIENT IDENTIFICATION",text:"Patient Label pasted on all pages"},
+{id:"11",section:"B. ADMISSION DOCUMENTATION",text:"Admission Assessment completed"},
+{id:"12",section:"B. ADMISSION DOCUMENTATION",text:"Provisional Diagnosis documented"},
+{id:"13",section:"B. ADMISSION DOCUMENTATION",text:"Admission Source mentioned"},
+{id:"14",section:"B. ADMISSION DOCUMENTATION",text:"Consultant Name documented"},
+{id:"15",section:"B. ADMISSION DOCUMENTATION",text:"Department mentioned"},
+{id:"16",section:"B. ADMISSION DOCUMENTATION",text:"Reason for Admission documented"},
+{id:"17",section:"B. ADMISSION DOCUMENTATION",text:"Initial Vital Signs recorded"},
+{id:"18",section:"B. ADMISSION DOCUMENTATION",text:"Allergy Status documented"},
+{id:"19",section:"B. ADMISSION DOCUMENTATION",text:"Patient Identification Band applied"},
+{id:"20",section:"B. ADMISSION DOCUMENTATION",text:"Admission Consent available"},
+{id:"21",section:"C. DOCTOR DOCUMENTATION",text:"Initial Assessment by Doctor"},
+{id:"22",section:"C. DOCTOR DOCUMENTATION",text:"Date on Doctor Notes"},
+{id:"23",section:"C. DOCTOR DOCUMENTATION",text:"Time on Doctor Notes"},
+{id:"24",section:"C. DOCTOR DOCUMENTATION",text:"Daily Progress Notes available"},
+{id:"25",section:"C. DOCTOR DOCUMENTATION",text:"Treatment Plan documented"},
+{id:"26",section:"C. DOCTOR DOCUMENTATION",text:"Diagnosis updated regularly"},
+{id:"27",section:"C. DOCTOR DOCUMENTATION",text:"Investigation Advice documented"},
+{id:"28",section:"C. DOCTOR DOCUMENTATION",text:"Investigation Review documented"},
+{id:"29",section:"C. DOCTOR DOCUMENTATION",text:"Medication Orders complete"},
+{id:"30",section:"C. DOCTOR DOCUMENTATION",text:"Medication Orders signed"},
+{id:"31",section:"C. DOCTOR DOCUMENTATION",text:"Medication Orders dated"},
+{id:"32",section:"C. DOCTOR DOCUMENTATION",text:"Medication Orders timed"},
+{id:"33",section:"C. DOCTOR DOCUMENTATION",text:"Doctor Signature available"},
+{id:"34",section:"C. DOCTOR DOCUMENTATION",text:"Doctor Name available"},
+{id:"35",section:"C. DOCTOR DOCUMENTATION",text:"Consultant Review documented"},
+{id:"36",section:"C. DOCTOR DOCUMENTATION",text:"Referral Notes documented"},
+{id:"37",section:"C. DOCTOR DOCUMENTATION",text:"Specialty Consultation documented"},
+{id:"38",section:"C. DOCTOR DOCUMENTATION",text:"Final Diagnosis documented"},
+{id:"39",section:"C. DOCTOR DOCUMENTATION",text:"Clinical Summary documented"},
+{id:"40",section:"C. DOCTOR DOCUMENTATION",text:"Discharge Advice documented"},
+{id:"41",section:"D. NURSING DOCUMENTATION",text:"Initial Nursing Assessment"},
+{id:"42",section:"D. NURSING DOCUMENTATION",text:"Nursing Care Plan documented"},
+{id:"43",section:"D. NURSING DOCUMENTATION",text:"Nursing Diagnosis documented"},
+{id:"44",section:"D. NURSING DOCUMENTATION",text:"Nursing Intervention documented"},
+{id:"45",section:"D. NURSING DOCUMENTATION",text:"Evaluation documented"},
+{id:"46",section:"D. NURSING DOCUMENTATION",text:"Vital Chart maintained"},
+{id:"47",section:"D. NURSING DOCUMENTATION",text:"Intake Output Chart maintained"},
+{id:"48",section:"D. NURSING DOCUMENTATION",text:"Medication Administration Record complete"},
+{id:"49",section:"D. NURSING DOCUMENTATION",text:"Nursing Notes updated"},
+{id:"50",section:"D. NURSING DOCUMENTATION",text:"Nursing Notes dated"},
+{id:"51",section:"D. NURSING DOCUMENTATION",text:"Nursing Notes timed"},
+{id:"52",section:"D. NURSING DOCUMENTATION",text:"Nursing Staff Signature"},
+{id:"53",section:"D. NURSING DOCUMENTATION",text:"Nursing Incharge Signature"},
+{id:"54",section:"D. NURSING DOCUMENTATION",text:"Shift Handover documented"},
+{id:"55",section:"D. NURSING DOCUMENTATION",text:"Fall Risk Assessment"},
+{id:"56",section:"D. NURSING DOCUMENTATION",text:"Pain Assessment"},
+{id:"57",section:"D. NURSING DOCUMENTATION",text:"Pressure Sore Assessment"},
+{id:"58",section:"D. NURSING DOCUMENTATION",text:"Patient Education documented"},
+{id:"59",section:"D. NURSING DOCUMENTATION",text:"Infection Control Measures documented"},
+{id:"60",section:"D. NURSING DOCUMENTATION",text:"Nutrition Assessment completed"},
+{id:"61",section:"E. MEDICATION AUDIT",text:"Drug Name clearly written"},
+{id:"62",section:"E. MEDICATION AUDIT",text:"Dose documented"},
+{id:"63",section:"E. MEDICATION AUDIT",text:"Route documented"},
+{id:"64",section:"E. MEDICATION AUDIT",text:"Frequency documented"},
+{id:"65",section:"E. MEDICATION AUDIT",text:"Start Date documented"},
+{id:"66",section:"E. MEDICATION AUDIT",text:"Stop Date documented"},
+{id:"67",section:"E. MEDICATION AUDIT",text:"Allergy Check documented"},
+{id:"68",section:"E. MEDICATION AUDIT",text:"High Alert Drugs marked"},
+{id:"69",section:"E. MEDICATION AUDIT",text:"Verbal Orders authenticated"},
+{id:"70",section:"E. MEDICATION AUDIT",text:"Medication Administration signed"},
+{id:"71",section:"F. CONSENT DOCUMENTATION",text:"General Consent available"},
+{id:"72",section:"F. CONSENT DOCUMENTATION",text:"Procedure Consent available"},
+{id:"73",section:"F. CONSENT DOCUMENTATION",text:"Doctor Signature on Consent"},
+{id:"74",section:"F. CONSENT DOCUMENTATION",text:"Patient Signature on Consent"},
+{id:"75",section:"F. CONSENT DOCUMENTATION",text:"Relative Signature on Consent"},
+{id:"76",section:"F. CONSENT DOCUMENTATION",text:"Witness Signature on Consent"},
+{id:"77",section:"F. CONSENT DOCUMENTATION",text:"Date on Consent"},
+{id:"78",section:"F. CONSENT DOCUMENTATION",text:"Time on Consent"},
+{id:"79",section:"F. CONSENT DOCUMENTATION",text:"Consent in understandable language"},
+{id:"80",section:"F. CONSENT DOCUMENTATION",text:"Procedure clearly mentioned"},
+{id:"81",section:"G. OT / SURGICAL RECORDS",text:"Pre-Anesthesia Assessment"},
+{id:"82",section:"G. OT / SURGICAL RECORDS",text:"Pre-Operative Checklist"},
+{id:"83",section:"G. OT / SURGICAL RECORDS",text:"Surgical Safety Checklist"},
+{id:"84",section:"G. OT / SURGICAL RECORDS",text:"OT Notes documented"},
+{id:"85",section:"G. OT / SURGICAL RECORDS",text:"Anesthesia Record available"},
+{id:"86",section:"G. OT / SURGICAL RECORDS",text:"Immediate Post Anesthesia Assessment"},
+{id:"87",section:"G. OT / SURGICAL RECORDS",text:"Post Anesthesia Score documented"},
+{id:"88",section:"G. OT / SURGICAL RECORDS",text:"Blood Transfusion Record"},
+{id:"89",section:"G. OT / SURGICAL RECORDS",text:"Implant Sticker available"},
+{id:"90",section:"G. OT / SURGICAL RECORDS",text:"Surgeon Signature available"},
+{id:"91",section:"H. DISCHARGE DOCUMENTATION",text:"Discharge Summary available"},
+{id:"92",section:"H. DISCHARGE DOCUMENTATION",text:"Final Diagnosis mentioned"},
+{id:"93",section:"H. DISCHARGE DOCUMENTATION",text:"Procedure performed documented"},
+{id:"94",section:"H. DISCHARGE DOCUMENTATION",text:"Condition at Discharge documented"},
+{id:"95",section:"H. DISCHARGE DOCUMENTATION",text:"Discharge Medication documented"},
+{id:"96",section:"H. DISCHARGE DOCUMENTATION",text:"Follow-up Advice documented"},
+{id:"97",section:"H. DISCHARGE DOCUMENTATION",text:"Discharge Date documented"},
+{id:"98",section:"H. DISCHARGE DOCUMENTATION",text:"Discharge Time documented"},
+{id:"99",section:"H. DISCHARGE DOCUMENTATION",text:"Doctor Signature on Discharge Summary"},
+{id:"100",section:"H. DISCHARGE DOCUMENTATION",text:"Patient/Relative Acknowledgement"},
+{id:"DTH1",section:"DEATH DOCUMENTATION",text:"Death Summary documented"},
+{id:"DTH2",section:"DEATH DOCUMENTATION",text:"Death Audit performed / Mortality review"},
+{id:"DTH3",section:"DEATH DOCUMENTATION",text:"Form 4 (Death Report) completed"},
+{id:"DTH4",section:"DEATH DOCUMENTATION",text:"Cause of Death documented (ICD code)"},
+{id:"DTH5",section:"DEATH DOCUMENTATION",text:"Date & Time of Death documented"},
+{id:"DTH6",section:"DEATH DOCUMENTATION",text:"CPR Note / Resuscitation record available"},
+{id:"DTH7",section:"DEATH DOCUMENTATION",text:"Pronouncement Note & Doctor signature"},
+{id:"DTH8",section:"DEATH DOCUMENTATION",text:"Death Certificate issued / attached"},
+{id:"DTH9",section:"DEATH DOCUMENTATION",text:"Relative acknowledgment of death"},
+{id:"DTH10",section:"DEATH DOCUMENTATION",text:"Mortality Committee Review documented"}
+];
+
+let audits = [];
+let auditItems = [];
+let summaryRows = [];
+
+function today(){
+  const d = new Date();
+  return d.toISOString().slice(0,10);
+}
+document.getElementById("fromDate").value = today();
+document.getElementById("toDate").value = today();
+
+function checkPassword(){
+  if(document.getElementById("downloadPassword").value !== DOWNLOAD_PASSWORD){
+    alert("Wrong password");
+    return false;
+  }
+  return true;
+}
+function fmtDate(v){
+  if(!v) return "";
+  return new Date(v).toLocaleString("en-IN");
+}
+function pct(ok,total){
+  return total>0 ? ((ok/total)*100).toFixed(1)+"%" : "0.0%";
+}
+function shortParam(t){
+  return String(t).replace(" documented","").replace(" available","").replace(" mentioned","").replace(" completed","").slice(0,28);
+}
+
+async function loadReport(){
+  const from = document.getElementById("fromDate").value;
+  const to = document.getElementById("toDate").value;
+  if(!from || !to){ alert("Date range select karo"); return; }
+
+  const start = from + "T00:00:00";
+  const end = to + "T23:59:59";
+
+  const {data, error} = await sb.from("med_audits")
+    .select("*")
+    .gte("created_at", start)
+    .lte("created_at", end)
+    .order("created_at", {ascending:true});
+  if(error){ alert(error.message); console.error(error); return; }
+  audits = data || [];
+
+  if(audits.length === 0){
+    auditItems = []; summaryRows = [];
+    render();
+    alert("No data found");
+    return;
+  }
+
+  const ids = audits.map(a=>a.id);
+  const {data: itemData, error:itemError} = await sb.from("med_audit_items")
+    .select("*")
+    .in("audit_id", ids);
+  if(itemError){ alert(itemError.message); console.error(itemError); return; }
+  auditItems = itemData || [];
+  buildSummary();
+  render();
+}
+
+function itemMapForAudit(auditId){
+  const m = {};
+  auditItems.filter(x=>x.audit_id===auditId).forEach(x=>m[x.item_id]=x);
+  return m;
+}
+
+function buildSummary(){
+  summaryRows = baseItems.map(p=>{
+    let total=0, yes=0, no=0, na=0;
+    audits.forEach(a=>{
+      const im = itemMapForAudit(a.id);
+      const it = im[p.id];
+      if(!it) return;
+      if(it.status==="na"){ na++; return; }
+      total++;
+      if(it.status==="yes") yes++;
+      if(it.status==="no") no++;
+    });
+    const incomplete = no;
+    return {id:p.id, parameter:p.text, total, compliant:yes, incomplete, na, percentage:pct(yes,total)};
+  });
+}
+
+function render(){
+  const totalAudits = audits.length;
+  const totalParams = summaryRows.reduce((s,r)=>s+r.total,0);
+  const totalCompliant = summaryRows.reduce((s,r)=>s+r.compliant,0);
+  const totalIncomplete = summaryRows.reduce((s,r)=>s+r.incomplete,0);
+  const overall = pct(totalCompliant,totalParams);
+  document.getElementById("kpiBox").innerHTML = `
+    <div>Total Audit: ${totalAudits}</div>
+    <div>Total Parameters Audited: ${totalParams}</div>
+    <div>Total Compliance: ${totalCompliant}</div>
+    <div>Total Non Compliance: ${totalIncomplete}</div>
+    <div>Overall Percentage: ${overall}</div>
+  `;
+
+  document.getElementById("summaryTable").innerHTML = `
+    <tr><th>Parameter</th><th>Total</th><th>Compliance</th><th>Non Compliance</th><th>NA</th><th>Percentage</th></tr>
+    ${summaryRows.map(r=>`<tr><td class="left">${r.id}. ${r.parameter}</td><td>${r.total}</td><td>${r.compliant}</td><td>${r.incomplete}</td><td>${r.na}</td><td>${r.percentage}</td></tr>`).join("")}
+    <tr><th>Total</th><th>${totalParams}</th><th>${totalCompliant}</th><th>${totalIncomplete}</th><th>${summaryRows.reduce((s,r)=>s+r.na,0)}</th><th>${overall}</th></tr>
+  `;
+
+  document.getElementById("auditTable").innerHTML = `
+    <tr><th>S.N</th><th>Audit Date Time</th><th>IP</th><th>UHID</th><th>Patient</th><th>Score</th><th>Compliance %</th></tr>
+    ${audits.map((a,i)=>`<tr><td>${i+1}</td><td>${fmtDate(a.created_at)}</td><td>${a.ip_number||""}</td><td>${a.uhid||""}</td><td>${a.patient_name||""}</td><td>${a.yes_count||0}/${a.applicable_count||0}</td><td>${a.compliance_percent||0}%</td></tr>`).join("")}
+  `;
+}
+
+function downloadExcel(){
+  if(!checkPassword()) return;
+  if(!audits.length){ alert("Pehle data show karo"); return; }
+
+  const rows = audits.map((a,i)=>{
+    const im = itemMapForAudit(a.id);
+    const row = {
+      "S.N": i+1,
+      "Audit Date Time": fmtDate(a.created_at),
+      "IP Number": a.ip_number || "",
+      "UHID": a.uhid || "",
+      "Patient Name": a.patient_name || "",
+      "Age": a.age || "",
+      "Gender": a.gender || "",
+      "Ward": a.ward || "",
+      "Bed": a.bed_number || "",
+      "Compliance %": (a.compliance_percent || 0) + "%",
+      "Overall Remark": a.global_remark || ""
     };
+    baseItems.forEach(p=>{
+      const it = im[p.id];
+      row[p.id+" "+p.text] = it ? it.status.toUpperCase() : "";
+      row[p.id+" Remark"] = it ? (it.remark || "") : "";
+    });
+    return row;
+  });
+
+  const summary = summaryRows.map(r=>({
+    Parameter:r.parameter,
+    Total:r.total,
+    Compliance:r.compliant,
+    "Non Compliance":r.incomplete,
+    NA:r.na,
+    Percentage:r.percentage
+  }));
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), "Audit Data");
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(summary), "Parameter Summary");
+  XLSX.writeFile(wb, "MedAudit_Report_Original_Parameters.xlsx");
+}
+
+function downloadFinalPdf(){
+  if(!checkPassword()) return;
+  if(!audits.length){ alert("Pehle data show karo"); return; }
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF("p","pt","a4");
+  const from = document.getElementById("fromDate").value, to = document.getElementById("toDate").value;
+  doc.setFont("helvetica","bold"); doc.setFontSize(16);
+  doc.text("ARC+ SUPER SPECIALTY HOSPITAL", 30, 35);
+  doc.setFontSize(10); doc.text("FINAL AUDIT REPORT", 30, 52);
+  doc.setFont("helvetica","normal"); doc.setFontSize(8);
+  doc.text(`Report Range: ${from} to ${to}`, 30, 65);
+
+  doc.autoTable({
+    startY: 78,
+    head: [["PARAMETER","TOTAL","INCOMPLETE","PERCENTAGE"]],
+    body: summaryRows.map(r=>[r.id+". "+r.parameter, r.total, r.incomplete, r.percentage]),
+    styles:{fontSize:7,cellPadding:3,lineColor:[180,190,200],lineWidth:.4},
+    headStyles:{fillColor:[255,255,255],textColor:[0,0,0],fontStyle:"bold",lineColor:[0,0,0],lineWidth:1},
+    columnStyles:{0:{cellWidth:260},1:{cellWidth:80},2:{cellWidth:100},3:{cellWidth:100}}
+  });
+
+  const y = doc.lastAutoTable.finalY + 16;
+  const totalParams = summaryRows.reduce((s,r)=>s+r.total,0);
+  const totalIncomplete = summaryRows.reduce((s,r)=>s+r.incomplete,0);
+  const totalCompliant = summaryRows.reduce((s,r)=>s+r.compliant,0);
+  doc.setFont("helvetica","bold"); doc.setFontSize(12);
+  doc.text(`Total Parameters Audited: ${totalParams}`, 30, y);
+  doc.text(`Total Incomplete Parameters: ${totalIncomplete}`, 30, y+16);
+  doc.text(`Total Compliance Parameters: ${totalCompliant}`, 30, y+32);
+  doc.text(`Overall Percentage: ${pct(totalCompliant,totalParams)}`, 30, y+48);
+  doc.save("Final_Audit_Report_Original_Parameters.pdf");
+}
+
+function downloadMonthlyPdf(){
+  if(!checkPassword()) return;
+  if(!audits.length){ alert("Pehle data show karo"); return; }
+
+  const { jsPDF } = window.jspdf;
+  const from = document.getElementById("fromDate").value;
+  const to = document.getElementById("toDate").value;
+
+  /*
+    Monthly PDF ab 25-25 parameters me split hoga:
+    Page 1  = Summary
+    Page 2  = Parameter 01-25
+    Page 3  = Parameter 26-50
+    Page 4  = Parameter 51-75
+    Page 5  = Parameter 76-100
+    Page 6+ = Death parameters agar selected data me ho
+  */
+
+  const doc = new jsPDF("l","pt","a4");
+
+  function addHeader(title, y=20){
+    doc.setFont("helvetica","bold");
+    doc.setFontSize(11);
+    doc.text("ARC PLUS SUPER SPECIALTY HOSPITAL, CHITAIPUR VARANASI", 421, y, {align:"center"});
+    doc.setFontSize(8);
+    doc.text(title, 421, y+14, {align:"center"});
+    doc.setFont("helvetica","bold");
+    doc.setFontSize(8);
+    doc.text(`Date: ${from} to ${to}`, 20, y+30);
+  }
+
+  // ---------- PAGE 1: SUMMARY ----------
+  addHeader("MEDICAL RECORD REVIEW AUDIT SHEET - SUMMARY");
+
+  const totalParams = summaryRows.reduce((s,r)=>s+r.total,0);
+  const totalCompliant = summaryRows.reduce((s,r)=>s+r.compliant,0);
+  const totalIncomplete = summaryRows.reduce((s,r)=>s+r.incomplete,0);
+  const totalNA = summaryRows.reduce((s,r)=>s+r.na,0);
+  const overall = pct(totalCompliant,totalParams);
+
+  doc.autoTable({
+    startY: 58,
+    head: [["PARAMETER","TOTAL","COMPLIANCE","NON COMPLIANCE","NA","PERCENTAGE"]],
+    body: summaryRows.map(r=>[r.id+". "+r.parameter, r.total, r.compliant, r.incomplete, r.na, r.percentage]),
+    styles:{fontSize:6.5,cellPadding:3,halign:"center",valign:"middle",lineColor:[0,0,0],lineWidth:.35},
+    headStyles:{fillColor:[255,255,255],textColor:[0,0,0],fontStyle:"bold",lineColor:[0,0,0],lineWidth:.8},
+    columnStyles:{0:{cellWidth:360,halign:"left"},1:{cellWidth:70},2:{cellWidth:80},3:{cellWidth:95},4:{cellWidth:55},5:{cellWidth:80}},
+    margin:{left:30,right:30}
+  });
+
+  let sy = doc.lastAutoTable.finalY + 14;
+  if(sy > 520){
+    doc.addPage();
+    addHeader("MEDICAL RECORD REVIEW AUDIT SHEET - TOTAL SUMMARY");
+    sy = 70;
+  }
+  doc.setFont("helvetica","bold");
+  doc.setFontSize(10);
+  doc.text(`Total Audit: ${audits.length}`, 35, sy);
+  doc.text(`Total Parameters Audited: ${totalParams}`, 35, sy+15);
+  doc.text(`Total Compliance: ${totalCompliant}`, 35, sy+30);
+  doc.text(`Total Non Compliance: ${totalIncomplete}`, 35, sy+45);
+  doc.text(`Total NA: ${totalNA}`, 35, sy+60);
+  doc.text(`Overall Percentage: ${overall}`, 35, sy+75);
+
+  // ---------- PARAMETER SHEET PAGES: 25-25 ----------
+  const chunks = [];
+  for(let i=0; i<baseItems.length; i+=25){
+    chunks.push(baseItems.slice(i, i+25));
+  }
+
+  chunks.forEach((params, chunkIndex)=>{
+    doc.addPage();
+    const startNo = chunkIndex*25 + 1;
+    const endNo = startNo + params.length - 1;
+    addHeader(`MEDICAL RECORD REVIEW AUDIT SHEET - PARAMETERS ${String(startNo).padStart(2,"0")} TO ${String(endNo).padStart(2,"0")}`);
+
+    const head = [["S.N","IPD NO","UHID","PATIENT",...params.map(p=>p.id), "SCORE"]];
+    const body = audits.map((a,i)=>{
+      const im = itemMapForAudit(a.id);
+      let yes=0, applicable=0;
+      const vals = params.map(p=>{
+        const st = im[p.id]?.status || "";
+        if(st && st !== "na") applicable++;
+        if(st === "yes") yes++;
+        if(st === "yes") return "✓";
+        if(st === "no") return "X";
+        if(st === "na") return "NA";
+        return "";
+      });
+      return [
+        i+1,
+        a.ip_number || "",
+        a.uhid || "",
+        (a.patient_name || "").slice(0,16),
+        ...vals,
+        `${yes}/${applicable}`
+      ];
+    });
+
+    const scoreRow = ["SCORE","","","",...params.map(p=>{
+      const r = summaryRows.find(x=>x.id===p.id);
+      return `${r?.compliant||0}/${r?.total||0}`;
+    }), ""];
+
+    doc.autoTable({
+      startY: 58,
+      head,
+      body: [...body, scoreRow],
+      styles:{
+        fontSize:6,
+        cellPadding:2,
+        halign:"center",
+        valign:"middle",
+        lineColor:[0,0,0],
+        lineWidth:.6,
+        minCellHeight:17
+      },
+      headStyles:{
+        fillColor:[255,255,255],
+        textColor:[0,0,0],
+        fontStyle:"bold",
+        lineColor:[0,0,0],
+        lineWidth:.8,
+        minCellHeight:70
+      },
+      margin:{left:12,right:12},
+      columnStyles:{
+        0:{cellWidth:22},
+        1:{cellWidth:48},
+        2:{cellWidth:55},
+        3:{cellWidth:85},
+        [params.length+4]:{cellWidth:42}
+      },
+      didParseCell:function(data){
+        if(data.column.index >= 4 && data.column.index <= params.length+3){
+          data.cell.styles.cellWidth = 22;
+        }
+        if(data.section === "head" && data.column.index >= 4 && data.column.index <= params.length+3){
+          const p = params[data.column.index-4];
+          data.cell.text = [p.id, shortParam(p.text)];
+          data.cell.styles.fontSize = 4.5;
+          data.cell.styles.valign = "middle";
+        }
+        if(data.section === "body" && data.row.index === body.length){
+          data.cell.styles.fontStyle = "bold";
+          data.cell.styles.fillColor = [245,248,250];
+        }
+      }
+    });
+
+    let y = doc.lastAutoTable.finalY + 10;
+    if(y < 520){
+      doc.setFont("helvetica","bold");
+      doc.setFontSize(6);
+      doc.text("Parameter Details:", 14, y);
+      doc.setFont("helvetica","normal");
+      params.forEach((p,idx)=>{
+        const lineY = y + 10 + (idx%13)*8;
+        const lineX = idx < 13 ? 14 : 410;
+        doc.text(`${p.id}: ${p.text}`, lineX, lineY);
+      });
+    }
+    doc.setFontSize(5);
+    doc.text("Generated: " + new Date().toLocaleString("en-IN"), 14, 580);
+  });
+
+  // ---------- DEATH PARAMETERS PAGE IF AVAILABLE ----------
+  const deathParams = baseItems.filter(p=>String(p.id).startsWith("DTH"));
+  const hasDeathData = deathParams.some(p => summaryRows.find(r=>r.id===p.id && (r.total>0 || r.na>0)));
+  if(hasDeathData){
+    doc.addPage();
+    addHeader("MEDICAL RECORD REVIEW AUDIT SHEET - DEATH PARAMETERS");
+
+    const params = deathParams;
+    const head = [["S.N","IPD NO","UHID","PATIENT",...params.map(p=>p.id), "SCORE"]];
+    const body = audits.map((a,i)=>{
+      const im = itemMapForAudit(a.id);
+      let yes=0, applicable=0;
+      const vals = params.map(p=>{
+        const st = im[p.id]?.status || "";
+        if(st && st !== "na") applicable++;
+        if(st === "yes") yes++;
+        if(st === "yes") return "✓";
+        if(st === "no") return "X";
+        if(st === "na") return "NA";
+        return "";
+      });
+      return [i+1, a.ip_number||"", a.uhid||"", (a.patient_name||"").slice(0,18), ...vals, `${yes}/${applicable}`];
+    });
+    const scoreRow = ["SCORE","","","",...params.map(p=>{
+      const r = summaryRows.find(x=>x.id===p.id);
+      return `${r?.compliant||0}/${r?.total||0}`;
+    }), ""];
+
+    doc.autoTable({
+      startY:58,
+      head,
+      body:[...body, scoreRow],
+      styles:{fontSize:7,cellPadding:3,halign:"center",valign:"middle",lineColor:[0,0,0],lineWidth:.6},
+      headStyles:{fillColor:[255,255,255],textColor:[0,0,0],fontStyle:"bold",lineColor:[0,0,0],lineWidth:.8},
+      margin:{left:20,right:20},
+      columnStyles:{0:{cellWidth:28},1:{cellWidth:55},2:{cellWidth:65},3:{cellWidth:110}},
+      didParseCell:function(data){
+        if(data.section === "body" && data.row.index === body.length){
+          data.cell.styles.fontStyle = "bold";
+          data.cell.styles.fillColor = [245,248,250];
+        }
+      }
+    });
+  }
+
+  doc.save("Monthly_Audit_Sheet_25_Parameters_Per_Page.pdf");
+}
+function downloadDetailPdf(){
+  if(!checkPassword()) return;
+  if(!audits.length){ alert("Pehle data show karo"); return; }
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF("p","pt","a4");
+  audits.forEach((a,idx)=>{
+    if(idx>0 && idx%4===0) doc.addPage();
+    const boxY = 30 + (idx%4)*190;
+    doc.setFont("helvetica","bold"); doc.setFontSize(9);
+    doc.text(`File ${idx+1}: ${a.patient_name||""} | IP: ${a.ip_number||""} | UHID: ${a.uhid||""}`, 25, boxY);
+    doc.setFont("helvetica","normal"); doc.setFontSize(7);
+    doc.text(`Audit: ${fmtDate(a.created_at)} | Score: ${a.yes_count||0}/${a.applicable_count||0} | Compliance: ${a.compliance_percent||0}%`, 25, boxY+12);
+    const im = itemMapForAudit(a.id);
+    const body = baseItems.map(p=>[p.id, p.text, (im[p.id]?.status||"").toUpperCase(), im[p.id]?.remark||""]);
+    doc.autoTable({
+      startY: boxY+20,
+      head:[["ID","Parameter","Status","Remark"]],
+      body,
+      styles:{fontSize:4.8,cellPadding:1,lineWidth:.1},
+      headStyles:{fillColor:[11,59,95],fontSize:5},
+      margin:{left:25,right:25},
+      tableWidth:545,
+      columnStyles:{0:{cellWidth:24},1:{cellWidth:280},2:{cellWidth:45},3:{cellWidth:190}},
+      pageBreak:"avoid"
+    });
+  });
+  doc.save("Detail_Audit_Report_4_File_Per_Page.pdf");
+}
 </script>
 </body>
 </html>
