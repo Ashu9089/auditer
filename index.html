@@ -54,6 +54,12 @@
     .warning { color: #c62828; font-size: 0.8rem; margin-top: 5px; }
     footer { text-align: center; margin-top: 30px; font-size: 0.75rem; color: #4a627a; }
 
+    .camera-tip { color:#dbeafe; font-size:12px; line-height:1.35; margin:8px 0 12px; text-align:left; background:rgba(255,255,255,.08); border-radius:14px; padding:10px; }
+    .modal-content.wide-camera { width: min(96vw, 900px); max-height: 96vh; overflow:auto; }
+    #video { max-height: 72vh; object-fit: contain; background:#000; }
+    #cameraZoomInfo { color:#fde68a; font-size:12px; margin-top:6px; }
+
+
     .top-nav { position: sticky; top: 0; z-index: 500; max-width: 1400px; margin: 0 auto 14px; background: #0b3b5f; color: white; border-radius: 22px; padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; box-shadow: 0 6px 18px rgba(11,59,95,.20); }
     .top-nav-title { font-weight: 800; letter-spacing: .3px; display: flex; align-items: center; gap: 8px; }
     .reports-btn { background: #fbbf24; color: #111827; border: none; padding: 10px 18px; border-radius: 999px; font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 3px 8px rgba(0,0,0,.12); }
@@ -112,6 +118,7 @@
       <div class="patient-field"><label>Bed Number</label><input type="text" id="patBed" placeholder="Bed No"></div>
       <div class="patient-field"><label>Admission Date</label><input type="date" id="patAdmitDate"></div>
       <div class="patient-field"><label>Admission Time</label><input type="time" id="patAdmitTime"></div>
+      <div class="patient-field"><label>Consultant / Doctor Name</label><input type="text" id="doctorName" placeholder="Doctor name"></div>
     </div>
     <div class="aadhar-row">
       <i class="fas fa-id-card"></i> <strong>Aadhar Copy / Verification:</strong>
@@ -148,8 +155,12 @@
 
 <!-- Camera Modal -->
 <div id="cameraModal" class="modal">
-  <div class="modal-content">
+  <div class="modal-content wide-camera">
     <video id="video" autoplay playsinline></video>
+    <div class="camera-tip">
+      Face sheet ko camera se 1.5–2 feet door rakho, pura page frame me lao. Agar mobile zoom kar raha ho to phone ko thoda door karke capture karo. OCR ke liye light clear rakho.
+      <div id="cameraZoomInfo"></div>
+    </div>
     <canvas id="canvas" style="display:none;"></canvas>
     <div class="modal-buttons">
       <button class="camera-btn" id="captureBtn" style="background:#2e7d32; color:white;"><i class="fas fa-camera"></i> Capture & Scan</button>
@@ -436,6 +447,7 @@
       bed_number: document.getElementById("patBed").value.trim(),
       admission_date: document.getElementById("patAdmitDate").value || null,
       admission_time: document.getElementById("patAdmitTime").value || null,
+      doctor_name: document.getElementById("doctorName") ? document.getElementById("doctorName").value.trim() : null,
       aadhar_status: document.querySelector("input[name='aadharStatus']:checked").value,
       nursing_handover_name: document.getElementById("nursingHandoverName").value.trim(),
       global_remark: document.getElementById("globalRemark").value.trim(),
@@ -534,6 +546,7 @@
       patBed: "",
       patAdmitDate: "",
       patAdmitTime: "",
+      doctorName: "",
       nursingHandoverName: "",
       globalRemark: ""
     };
@@ -591,7 +604,8 @@
       ward: document.getElementById("patWard").value,
       bed: document.getElementById("patBed").value,
       admitDate: document.getElementById("patAdmitDate").value,
-      admitTime: document.getElementById("patAdmitTime").value
+      admitTime: document.getElementById("patAdmitTime").value,
+      doctorName: document.getElementById("doctorName").value
     };
 
     localStorage.setItem("audit_patient_data", JSON.stringify(patient));
@@ -628,6 +642,7 @@
       document.getElementById("patGender").value = p.gender||"Male"; document.getElementById("patWard").value = p.ward||"";
       document.getElementById("patBed").value = p.bed||""; document.getElementById("patAdmitDate").value = p.admitDate||"";
       document.getElementById("patAdmitTime").value = p.admitTime||"";
+      if(document.getElementById("doctorName")) document.getElementById("doctorName").value = p.doctorName||"";
     }
     const aadhar = localStorage.getItem("aadhar_status");
     if(aadhar === "yes") document.querySelector("input[name='aadharStatus'][value='yes']").checked = true;
@@ -670,46 +685,220 @@
     renderChecklist();
   }
 
-  // Camera OCR (unchanged)
+  // Camera OCR - face sheet optimized, less zoom, more fields
   const modal = document.getElementById("cameraModal");
   const video = document.getElementById("video");
   const canvas = document.getElementById("canvas");
   let stream = null;
+
+  function normalizeOcrText(text) {
+    return (text || "")
+      .replace(/\r/g, "\n")
+      .replace(/[|]/g, " ")
+      .replace(/[ ]{2,}/g, " ")
+      .replace(/\n{2,}/g, "\n")
+      .trim();
+  }
+
+  function cleanValue(value) {
+    return (value || "")
+      .replace(/^[\s:.-]+/, "")
+      .replace(/[\s:.-]+$/, "")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  function parseFaceSheetText(rawText) {
+    const text = normalizeOcrText(rawText);
+    const oneLine = text.replace(/\n/g, " ");
+
+    const get = (regex) => {
+      const m = text.match(regex) || oneLine.match(regex);
+      return m ? cleanValue(m[1]) : "";
+    };
+
+    const data = {};
+
+    data.uhid = get(/UHID\s*(?:No\.?|Number)?\s*[:\-]?\s*([A-Z0-9\/-]+)/i);
+    data.ip = get(/IPD\s*(?:No\.?|Number)?\s*[:\-]?\s*([A-Z0-9\/-]+)/i) || get(/IP\s*(?:No\.?|Number)?\s*[:\-]?\s*([A-Z0-9\/-]+)/i);
+
+    data.name = get(/Name\s*of\s*Patient\s*[:\-]?\s*([A-Za-z .]+?)(?=\s+(?:Age|Father|Husband|Address|Phone|Date|Referring|Consultant)|\n|$)/i);
+    if (!data.name) data.name = get(/Patient\s*Name\s*[:\-]?\s*([A-Za-z .]+?)(?=\s+(?:Age|Father|Husband|Address|Phone|Date)|\n|$)/i);
+
+    const ageGender = oneLine.match(/Age\s*[:\-]?\s*(\d{1,3})\s*(?:Y|Yr|Years)?\s*\/?\s*(Male|Female|M|F|Other)?/i);
+    if (ageGender) {
+      data.age = ageGender[1];
+      const g = (ageGender[2] || "").toLowerCase();
+      if (g === "m" || g === "male") data.gender = "Male";
+      if (g === "f" || g === "female") data.gender = "Female";
+      if (g === "other") data.gender = "Other";
+    } else {
+      data.age = get(/Age\s*[:\-]?\s*(\d{1,3})/i);
+    }
+
+    data.mobile = get(/Mobile\s*(?:No\.?)?\s*[:\-]?\s*([0-9]{10})/i) || get(/Phone\s*(?:No\.?)?(?:\/Mobile\s*No\.?)?\s*[:\-]?\s*([0-9]{10})/i);
+
+    let admitDate = get(/Date\s*of\s*Admission\s*[:\-]?\s*([0-9]{1,2}[\/\-][A-Za-z]{3,9}[\/\-][0-9]{4}|[0-9]{1,2}[\/\-][0-9]{1,2}[\/\-][0-9]{4})/i);
+    if (admitDate) {
+      data.admitDateText = admitDate;
+      const dmyText = admitDate.match(/(\d{1,2})[\/\-]([A-Za-z]{3,9})[\/\-](\d{4})/);
+      const dmyNum = admitDate.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
+      const months = {jan:1,january:1,feb:2,february:2,mar:3,march:3,apr:4,april:4,may:5,jun:6,june:6,jul:7,july:7,aug:8,august:8,sep:9,september:9,oct:10,october:10,nov:11,november:11,dec:12,december:12};
+      if (dmyText) {
+        const dd = dmyText[1].padStart(2,"0");
+        const mm = String(months[dmyText[2].toLowerCase()] || "").padStart(2,"0");
+        const yy = dmyText[3];
+        if (mm !== "00") data.admitDate = `${yy}-${mm}-${dd}`;
+      } else if (dmyNum) {
+        data.admitDate = `${dmyNum[3]}-${dmyNum[2].padStart(2,"0")}-${dmyNum[1].padStart(2,"0")}`;
+      }
+    }
+
+    const timeMatch = oneLine.match(/(?:Date\s*of\s*Admission.*?|Admission.*?|Bed.*?)Time\s*[:\-]?\s*([0-2]?\d[:.][0-5]\d)/i) || oneLine.match(/\bTime\s*[:\-]?\s*([0-2]?\d[:.][0-5]\d)/i);
+    if (timeMatch) data.admitTime = timeMatch[1].replace(".", ":").padStart(5, "0");
+
+    data.ward = get(/\bWard\s*[:\-]?\s*([A-Za-z0-9 .\/-]+)/i);
+    data.bed = get(/\bBed\s*[:\-]?\s*([A-Za-z0-9 .\/-]+?)(?=\s+(?:Date|Time|No\.?\s*of\s*Days|Extra)|\n|$)/i);
+
+    data.doctorName =
+      get(/Consultant\s*[:\-]?\s*(?:DR\.?\s*)?([A-Za-z .]+?)(?=\s+(?:Mobile|Associated|Bed|Date|Time)|\n|$)/i) ||
+      get(/Referring\s*Doctor\s*[:\-]?\s*(?:DR\.?\s*)?([A-Za-z .]+?)(?=\s+(?:Consultant|Mobile|Associated|Bed|Date)|\n|$)/i) ||
+      get(/Doctor\s*Name\s*[:\-]?\s*(?:DR\.?\s*)?([A-Za-z .]+?)(?=\s+(?:Mobile|Bed|Date|Time)|\n|$)/i);
+
+    if (data.doctorName && !/^dr\.?/i.test(data.doctorName)) {
+      data.doctorName = "DR. " + data.doctorName.toUpperCase();
+    }
+
+    return data;
+  }
+
+  function fillPatientFieldsFromOcr(data) {
+    if (data.name) document.getElementById("patName").value = data.name.toUpperCase();
+    if (data.uhid) document.getElementById("patUhid").value = data.uhid;
+    if (data.ip) document.getElementById("patIp").value = data.ip;
+    if (data.age) document.getElementById("patAge").value = data.age;
+    if (data.gender) document.getElementById("patGender").value = data.gender;
+    if (data.ward) document.getElementById("patWard").value = data.ward;
+    if (data.bed) document.getElementById("patBed").value = data.bed;
+    if (data.admitDate) document.getElementById("patAdmitDate").value = data.admitDate;
+    if (data.admitTime) document.getElementById("patAdmitTime").value = data.admitTime;
+    if (data.doctorName && document.getElementById("doctorName")) document.getElementById("doctorName").value = data.doctorName;
+  }
+
+  async function startCameraWide() {
+    if(stream) stream.getTracks().forEach(t => t.stop());
+
+    const constraintsList = [
+      {
+        video: {
+          facingMode: { ideal: "environment" },
+          width: { ideal: 1920 },
+          height: { ideal: 1080 },
+          aspectRatio: { ideal: 1.777777 },
+          zoom: { ideal: 1 }
+        },
+        audio: false
+      },
+      {
+        video: {
+          facingMode: "environment",
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        },
+        audio: false
+      },
+      { video: true, audio: false }
+    ];
+
+    let lastErr = null;
+    for (const constraints of constraintsList) {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia(constraints);
+        break;
+      } catch (err) {
+        lastErr = err;
+      }
+    }
+    if (!stream) throw lastErr || new Error("Camera not available");
+
+    video.srcObject = stream;
+    await video.play();
+
+    const track = stream.getVideoTracks()[0];
+    const caps = track.getCapabilities ? track.getCapabilities() : {};
+    const settings = track.getSettings ? track.getSettings() : {};
+    const zoomInfo = document.getElementById("cameraZoomInfo");
+
+    if (caps.zoom) {
+      try {
+        await track.applyConstraints({ advanced: [{ zoom: caps.zoom.min || 1 }] });
+        if (zoomInfo) zoomInfo.innerText = "Camera zoom minimum par set hai.";
+      } catch(e) {
+        if (zoomInfo) zoomInfo.innerText = "Camera zoom auto hai. Page ko thoda door rakho.";
+      }
+    } else {
+      if (zoomInfo) zoomInfo.innerText = `Camera: ${settings.width || ""}x${settings.height || ""}. Agar zoom lage to phone door rakho.`;
+    }
+  }
+
   document.getElementById("openCameraBtn").addEventListener("click", async () => {
     modal.style.display = "flex";
     try {
-      if(stream) stream.getTracks().forEach(t=>t.stop());
-      stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-      video.srcObject = stream;
-      await video.play();
-    } catch(err) { alert("Camera error"); modal.style.display="none"; }
+      await startCameraWide();
+    } catch(err) {
+      console.error("Camera error:", err);
+      alert("Camera error. Browser permission aur HTTPS/Live Server check karo.");
+      modal.style.display = "none";
+    }
   });
+
   document.getElementById("closeModalBtn").addEventListener("click", () => {
     modal.style.display = "none";
     if(stream) { stream.getTracks().forEach(t=>t.stop()); stream=null; }
   });
+
   document.getElementById("captureBtn").addEventListener("click", async () => {
     const ctx = canvas.getContext("2d");
-    canvas.width = video.videoWidth; canvas.height = video.videoHeight;
-    ctx.drawImage(video, 0, 0);
-    const blob = await (await fetch(canvas.toDataURL("image/png"))).blob();
+    canvas.width = video.videoWidth || 1920;
+    canvas.height = video.videoHeight || 1080;
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
     const statusDiv = document.getElementById("ocrStatus");
     statusDiv.innerText = "OCR processing...";
+
     try {
-      const { data: { text } } = await Tesseract.recognize(blob, 'eng');
-      statusDiv.innerText = "Done!";
-      let name = text.match(/Patient Name[\s:]*([A-Za-z\s]+)/i)?.[1] || text.match(/[A-Z][a-z]+ [A-Z][a-z]+/)?.[0] || "";
-      let uhid = text.match(/UHID[\s:]*([A-Z0-9]+)/i)?.[1] || "";
-      let ip = text.match(/IP Number[\s:]*([A-Z0-9]+)/i)?.[1] || "";
-      let age = text.match(/Age[\s:]*(\d+)/i)?.[1] || "";
-      if(name) document.getElementById("patName").value = name;
-      if(uhid) document.getElementById("patUhid").value = uhid;
-      if(ip) document.getElementById("patIp").value = ip;
-      if(age) document.getElementById("patAge").value = age;
-      let wardMatch = text.match(/Ward[\s:]*([A-Za-z0-9]+)/i);
-      if(wardMatch) document.getElementById("patWard").value = wardMatch[1];
-      setTimeout(()=>{ statusDiv.innerText=""; modal.style.display="none"; if(stream) stream.getTracks().forEach(t=>t.stop()); },1000);
-    } catch(e) { statusDiv.innerText="OCR error"; }
+      const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/png", 1));
+      const { data: { text } } = await Tesseract.recognize(blob, "eng+hin", {
+        logger: m => {
+          if (m.status) statusDiv.innerText = `OCR: ${m.status} ${m.progress ? Math.round(m.progress*100)+"%" : ""}`;
+        }
+      });
+
+      const parsed = parseFaceSheetText(text);
+      fillPatientFieldsFromOcr(parsed);
+      checkDuplicatePatient();
+
+      const found = [];
+      if(parsed.name) found.push("Patient");
+      if(parsed.uhid) found.push("UHID");
+      if(parsed.ip) found.push("IPD");
+      if(parsed.age) found.push("Age");
+      if(parsed.gender) found.push("Gender");
+      if(parsed.bed) found.push("Bed");
+      if(parsed.admitDate) found.push("Admission Date");
+      if(parsed.admitTime) found.push("Time");
+      if(parsed.doctorName) found.push("Doctor");
+
+      statusDiv.innerText = found.length ? "Filled: " + found.join(", ") : "OCR done, but clear fields nahi mile. Photo clear/door se lo.";
+      setTimeout(()=>{
+        statusDiv.innerText="";
+        modal.style.display="none";
+        if(stream) { stream.getTracks().forEach(t=>t.stop()); stream=null; }
+      }, 1800);
+    } catch(e) {
+      console.error("OCR error:", e);
+      statusDiv.innerText = "OCR error. Clear photo try karo.";
+    }
   });
 
   // Event listeners
